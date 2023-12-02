@@ -15,5 +15,6 @@ data %>%
 data %>% 
   count(data$fraud)
 
-# We noticed that most transactions are not fraud. so accuracy may not be a proper model evluation metric. 
-# Consider AUC-ROC, f1 score etc.
+# We noticed that most transactions are not fraud. so accuracy may not be a proper model evaluation metric. 
+# Consider AUC-ROC, f1 score as evaluation metric.
+# Consider using stratified sampling/oversampling to handle the imbalanced classification problem
