@@ -3,6 +3,8 @@
 library(tidymodels)
 library(xgboost)
 library(tidyverse)
+library(pROC)
+library(ggplot2)
 
 ### 2.Data Cleaning:
 
@@ -48,7 +50,7 @@ train.y <-  training(data.split) %>% pull(fraud)
 test.x <-  data.matrix(testing(data.split) %>% select(-fraud))
 test.y <-  testing(data.split) %>% pull(fraud)
 
-#define final training and testing sets
+#define xgb.DMatirx: This is a specialized data structure that xgboost uses for efficiency
 xgb.train <-  xgb.DMatrix(data = train.x, label = train.y)
 xgb.test <-  xgb.DMatrix(data = test.x, label = test.y)
 
@@ -58,22 +60,40 @@ xgb.test <-  xgb.DMatrix(data = test.x, label = test.y)
 # boosting iterations to be run while training the XGBoost model. In each round,
 # a new decision tree is added to the model to correct the mistakes made by trees in the previous rounds
 # large dataset usually need more rounds
-# we don't want overfitting, so keep an eye on test-rmse(Test Root Mean Squared Error)
+# we don't want overfitting, so use watchlist to keep an eye on test-loss
 
 # max.depth is how deep to grow the individual decision trees. We typically use small number like 2 or 3, as
 # this approach tends to produce more accurate models.
-#define watchlist
+
+#Define watchlist:
+# Using a watchlist and a test set to select the optimal number of boosting rounds(nrounds), we
+# track the performance of the model on both the training and validation datasets during the training process.
+# This method helps in determining the point at which the model starts to overfit, and we should stop there
 watchlist = list(train=xgb.train, test=xgb.test)
 
-#fit XGBoost model and display training and testing data at each round
-model <-  xgb.train(data = xgb.train, max.depth = 3, watchlist=watchlist, nrounds = 500)
+params <- list(
+  objective = "binary:logistic", # For binary classification problem, use this to predict probability
+  eta = 0.3 # learning rate
+)
 
-# Typically, find the number of rounds where test-rmse is the lowest and the afterwards start to increase
+#fit XGBoost model and display training and testing data at each round
+model <-  xgb.train(params = params, 
+                    data = xgb.train, # Training data
+                    max.depth = 3, # Size of each individual tree
+                    watchlist=watchlist, # Track model performance on train/test
+                    nrounds = 500, # Number of boosting iterations
+                    early_stopping_rounds = 50) # Number of iterations we will wait for the next decrease
+
+# Typically, find the number of rounds where test-loss is the lowest and the afterwards test-loss start to increase,
+# which means overfitting. We can let 'early_stopping_rounds' help us to determine. We need this parameter because the
+# loss values decrease randomly in each iteration. The test loss can bounce in some range and after few iterations decrease.
+# We usually use 10% of total rounds as the number of early_stopping_rounds
+
 # From result we noticed, 500 rounds looks good(ACTUALLY NOT SURE, PLEASE VERIFY)
 
-#define final model
+# Define final model
 # The argument verbose = 0 tells R not to display the training and testing error for each round.
-final <-  xgboost(data = xgb.train, max.depth = 3, nrounds = 500, verbose = 0)
+final <-  xgboost(params = params, data = xgb.train, max.depth = 3, nrounds = 500, verbose = 0)
 
 ### Feature Importance
 # WRITE-UP refer to: https://cran.r-project.org/web/packages/xgboost/vignettes/discoverYourData.html
@@ -81,7 +101,33 @@ importance <- xgb.importance(feature_names = colnames(train.x), model = final)
 head(importance)
 
 # plot
-xgb.plot.importance(importance_matrix = importance)
+# 3 most important features
+xgb.plot.importance(importance_matrix = importance, top_n = 5)
+
+### 6. Prediction and Accuracy Measure
+# Use model to make predictions on test data
+pred.y <- predict(final, test.x)
+
+# Label test data according to the predicted probability
+pred.label <- ifelse(pred.y > 0.5, 1, 0)
+
+# Confusion Matrix
+confusion.matrix <- table(Predicted = pred.label, Actual = test.y)
+print(confusion.matrix)
+
+# AUC-ROC
+roc <- roc(test.y, pred.label)
+auc <- auc(roc)
+print(auc)
+
+# Visualization
+roc_plot <- ggroc(roc)
+ggplot(roc_plot) + 
+  geom_line() + 
+  geom_abline(linetype = "dashed") + 
+  labs(title = "ROC Curve", x = "False Positive Rate", y = "True Positive Rate") + 
+  annotate("text", x = 0.2, y = 0.8, label = paste("AUC =", round(auc, 2)))
+
 
 
 
