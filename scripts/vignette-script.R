@@ -37,9 +37,9 @@ data <- data %>%
 set.seed(197)
 #split training/validation/testing
 data.split <- data %>% 
-  initial_split(prop = 0.6)
+  initial_split(prop = 0.6, strata = fraud)
 
-test.split <- initial_split(testing(data.split), prop = 0.5)
+test.split <- initial_split(testing(data.split), prop = 0.5, strata = fraud)
 data.val <- training(test.split)
 data.test <- testing(test.split)
 
