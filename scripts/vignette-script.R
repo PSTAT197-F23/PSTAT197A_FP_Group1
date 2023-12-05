@@ -121,12 +121,9 @@ auc <- auc(roc)
 print(auc)
 
 # Visualization
-roc_plot <- ggroc(roc)
-ggplot(roc_plot) + 
-  geom_line() + 
-  geom_abline(linetype = "dashed") + 
+ggroc(roc) +
   labs(title = "ROC Curve", x = "False Positive Rate", y = "True Positive Rate") + 
-  annotate("text", x = 0.2, y = 0.8, label = paste("AUC =", round(auc, 2)))
+  annotate("text", x = 0.2, y = 0.8, label = paste("AUC =", round(auc, 4)))
 
 
 
