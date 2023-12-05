@@ -100,11 +100,11 @@ model <-  xgb.train(params = params,
 # on the validation set hasn't improved for the specified number of consecutive rounds, the training stops.
 # We usually use 10% of total rounds as the value of early_stopping_rounds
 
-# From result we noticed, 500 rounds looks good(ACTUALLY NOT SURE, PLEASE VERIFY)
+# From result we noticed, 261 rounds looks good(SET SEED = 197, PLEASE VERIFY)
 
 # Define final model
 # The argument verbose = 0 tells R not to display the training and testing error for each round.
-final <-  xgboost(params = params, data = xgb.train, max.depth = 3, nrounds = 500, verbose = 0)
+final <-  xgboost(params = params, data = xgb.train, max.depth = 3, nrounds = 261, verbose = 0)
 
 ### Feature Importance
 # WRITE-UP refer to: https://cran.r-project.org/web/packages/xgboost/vignettes/discoverYourData.html
