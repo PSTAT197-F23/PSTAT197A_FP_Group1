@@ -35,9 +35,13 @@ data <- data %>%
 
 #set seed for reproducibility
 set.seed(197)
-#split training/testing
+#split training/validation/testing
 data.split <- data %>% 
-  initial_split(prop = 0.8)
+  initial_split(prop = 0.6)
+
+test.split <- initial_split(testing(data.split), prop = 0.5)
+data.val <- training(test.split)
+data.test <- testing(test.split)
 
 ### 4.Data Preparation
 
@@ -46,12 +50,17 @@ data.split <- data %>%
 train.x <-  data.matrix(training(data.split) %>% select(-fraud))
 train.y <-  training(data.split) %>% pull(fraud)
 
+#define predictor and response variables in validation set
+val.x <-  data.matrix(data.val %>% select(-fraud))
+val.y <-  data.val %>% pull(fraud)
+
 #define predictor and response variables in testing set
-test.x <-  data.matrix(testing(data.split) %>% select(-fraud))
-test.y <-  testing(data.split) %>% pull(fraud)
+test.x <-  data.matrix(data.test %>% select(-fraud))
+test.y <-  data.test %>% pull(fraud)
 
 #define xgb.DMatirx: This is a specialized data structure that xgboost uses for efficiency
 xgb.train <-  xgb.DMatrix(data = train.x, label = train.y)
+xgb.val <-  xgb.DMatrix(data = val.x, label = val.y)
 xgb.test <-  xgb.DMatrix(data = test.x, label = test.y)
 
 ### 5. Model Fitting
@@ -69,7 +78,7 @@ xgb.test <-  xgb.DMatrix(data = test.x, label = test.y)
 # Using a watchlist and a test set to select the optimal number of boosting rounds(nrounds), we
 # track the performance of the model on both the training and validation datasets during the training process.
 # This method helps in determining the point at which the model starts to overfit, and we should stop there
-watchlist = list(train=xgb.train, test=xgb.test)
+watchlist = list(train=xgb.train, validation=xgb.val)
 
 params <- list(
   objective = "binary:logistic", # For binary classification problem, use this to predict probability
@@ -85,9 +94,11 @@ model <-  xgb.train(params = params,
                     early_stopping_rounds = 50) # Number of iterations we will wait for the next decrease
 
 # Typically, find the number of rounds where test-loss is the lowest and the afterwards test-loss start to increase,
-# which means overfitting. We can let 'early_stopping_rounds' help us to determine. We need this parameter because the
-# loss values decrease randomly in each iteration. The test loss can bounce in some range and after few iterations decrease.
-# We usually use 10% of total rounds as the number of early_stopping_rounds
+# which means overfitting. Many machine learning models in R have a call back parameter that stops the iterations if the
+# amount of accuracy increased is smaller than certain threshold you specified. But XGBoost doesn't have it. Instead,
+# it uses a similar approach , which is called 'early_stopping_rounds' to determine when to stop. If the model's performance
+# on the validation set hasn't improved for the specified number of consecutive rounds, the training stops.
+# We usually use 10% of total rounds as the value of early_stopping_rounds
 
 # From result we noticed, 500 rounds looks good(ACTUALLY NOT SURE, PLEASE VERIFY)
 
@@ -123,7 +134,7 @@ print(auc)
 # Visualization
 ggroc(roc) +
   labs(title = "ROC Curve", x = "False Positive Rate", y = "True Positive Rate") + 
-  annotate("text", x = 0.2, y = 0.8, label = paste("AUC =", round(auc, 4)))
+  annotate("text", x = 0.2, y = 0.8, label = paste("AUC =", round(auc, 5)))
 
 
 
