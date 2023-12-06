@@ -75,7 +75,7 @@ xgb.test <-  xgb.DMatrix(data = test.x, label = test.y)
 # this approach tends to produce more accurate models.
 
 #Define watchlist:
-# Using a watchlist and a test set to select the optimal number of boosting rounds(nrounds), we
+# Using a watchlist and a validation set to select the optimal number of boosting rounds(nrounds), we
 # track the performance of the model on both the training and validation datasets during the training process.
 # This method helps in determining the point at which the model starts to overfit, and we should stop there
 watchlist = list(train=xgb.train, validation=xgb.val)
@@ -89,7 +89,7 @@ params <- list(
 model <-  xgb.train(params = params, 
                     data = xgb.train, # Training data
                     max.depth = 3, # Size of each individual tree
-                    watchlist=watchlist, # Track model performance on train/test
+                    watchlist=watchlist, # Track model performance on train/validation
                     nrounds = 500, # Number of boosting iterations
                     early_stopping_rounds = 50) # Number of iterations we will wait for the next decrease
 
