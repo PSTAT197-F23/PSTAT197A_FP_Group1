@@ -1,25 +1,27 @@
 ---
-title: "vignette"
-author: "Mu Niu"
-date: "2023-12-01"
+title: "Using XGBoost for Fraud Detection"
+author: "Mu Niu, Yixin Xue, Amber Wang, David Lin, Qifei Cui"
+date: "2023-12-08"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r}
+library(tidymodels)
+library(xgboost)
+library(tidyverse)
+library(pROC)
+library(ggplot2)
 ```
 
-## R Markdown
+## Abstract
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+XGBoost, an acronym for eXtreme Gradient Boosting, was crafted by Dr. Tianqi Chen in 2016 as a gradient-boosting algorithm. Demonstrating remarkable success, it has emerged as a formidable player in various data science competitions. Renowned for its exceptional performance, XGBoost stands out as a robust solution for tasks such as handling structured data, text classification, regression, and notably, exhibiting superior capabilities on large-scale datasets. Our vignette presents a comprehensive exploration of XGBoost, including its mathematical principles, programming language support, and practical application in classification problems.
 
 ```{r cars}
 summary(cars)
 ```
 
-## Including Plots
+## Dataset Introduction
 
 You can also embed plots, for example:
 
@@ -28,3 +30,13 @@ plot(pressure)
 ```
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+## Exploratory Data Analysis
+
+## Data Preprocessing
+
+## Introduction to Boosted Trees and XGBoost
+
+## Fraud Detection with XGBoost in R
+
+## Results and Analysis
