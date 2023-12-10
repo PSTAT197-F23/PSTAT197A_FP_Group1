@@ -69,11 +69,23 @@ i.e. $$g_i = \partial_{\hat{y_i}^{k-1}}l(y_i, \hat{y_i}^{k-1})$$ and $$h_i = \pa
 
 We find that the objective function for each tree depends only on $$g_i$$ and $$h_i$$, derivatives of the loss function. Therefore, XGBoost can be widely used in many scenarios, including regression, classification, and ranking problems, as long as XGBoost is given a loss function that is second-order differentiable. You can even custom your loss function in XGBoost!
 
+### Other techniques in XGBoost to improve efficiency
+
 ## Fraud Detection with XGBoost in R
 
 ### Data Preparation
 
 ```{r}
+#set seed for reproducibility
+set.seed(197)
+#split training/validation/testing
+data.split <- data %>% 
+  initial_split(prop = 0.6, strata = fraud)
+
+test.split <- initial_split(testing(data.split), prop = 0.5, strata = fraud)
+data.val <- training(test.split)
+data.test <- testing(test.split)
+
 #define predictor and response variables in training set
 # NOTE: XGBoost only use matrix data
 train.x <-  data.matrix(training(data.split) %>% select(-fraud))
@@ -86,18 +98,30 @@ val.y <-  data.val %>% pull(fraud)
 #define predictor and response variables in testing set
 test.x <-  data.matrix(data.test %>% select(-fraud))
 test.y <-  data.test %>% pull(fraud)
+```
 
+### Model Fitting
+
+-   objective: What's your goal? In this case, we use 'binary:logistic' to predict the probability of having a fraud based on the predictor variables
+
+-   eta: How fast to learn? default value 0.3
+
+-   data: Training data in DMatrix structure
+
+-   max.depth: The size of each tree and a rule of thumb is to use 2 or 3 to prevent overfitting
+
+-   watchlist: Track model performance on training and validation data during the training process to prevent overfitting
+
+-   nrounds: number of boosting rounds
+
+-   early_stopping_rounds: Stop the training process if the model's accuracy on validation set hasn't improved for the specified number of rounds
+
+```{r}
 #define xgb.DMatirx: This is a specialized data structure that xgboost uses for efficiency
 xgb.train <-  xgb.DMatrix(data = train.x, label = train.y)
 xgb.val <-  xgb.DMatrix(data = val.x, label = val.y)
 xgb.test <-  xgb.DMatrix(data = test.x, label = test.y)
 ```
-
-### Model Fitting
-
--   
-
--   Define watchlist: Using a watchlist and a validation set to select the optimal number of boosting rounds(nrounds), we track the performance of the model on both the training and validation datasets during the training process. This method helps to determine the point where the model starts to overfit, and we should perform an early-stopping.
 
 ```{r}
 watchlist = list(train=xgb.train, validation=xgb.val)
@@ -117,3 +141,20 @@ model <-  xgb.train(params = params,
 ```
 
 ## Results and Analysis
+
+Similar in random forest,
+
+```{r}
+# Define final model
+# The argument verbose = 0 tells R not to display the training and testing error for each round.
+final <-  xgboost(params = params, data = xgb.train, max.depth = 3, nrounds = 261, verbose = 0)
+
+### Feature Importance
+# WRITE-UP refer to: https://cran.r-project.org/web/packages/xgboost/vignettes/discoverYourData.html
+importance <- xgb.importance(feature_names = colnames(train.x), model = final)
+head(importance)
+
+# plot
+# 3 most important features
+xgb.plot.importance(importance_matrix = importance, top_n = 5)
+```
