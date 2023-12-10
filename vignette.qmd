@@ -69,7 +69,18 @@ i.e. $$g_i = \partial_{\hat{y_i}^{k-1}}l(y_i, \hat{y_i}^{k-1})$$ and $$h_i = \pa
 
 We find that the objective function for each tree depends only on $$g_i$$ and $$h_i$$, derivatives of the loss function. Therefore, XGBoost can be widely used in many scenarios, including regression, classification, and ranking problems, as long as XGBoost is given a loss function that is second-order differentiable. You can even custom your loss function in XGBoost!
 
+### Approximate Split Finding in XGBoost
+
 ### Other techniques in XGBoost to improve efficiency
+
+-    Each column (feature) of the dataset is pre-sorted and stored in memory as a column block. Each block contains the sorted feature column and each observation's corresponding label value. Recall that when finding the best split point in a decision tree, samples with the feature value less than the split value go to the left subtree, and samples with the feature value larger than the split point go to the right subtree. Instead of sorting in every split in every tree, this pre-sorting step is done only once. Then the efficiently sorted columns will be reused many times in building every single tree.
+
+```{=html}
+<!-- -->
+```
+-   XGBoost supports parallel computing during the process of finding the best split point in building a single tree. Then the information gain calculation for each feature can be done in parallel. Moreover, You can tune the parameter nthread to control the number of cores used in training XGBoost model.
+
+-   XGBoost supports column subsampling similar to a random forest.
 
 ## Fraud Detection with XGBoost in R
 
