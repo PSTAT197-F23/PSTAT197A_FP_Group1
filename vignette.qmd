@@ -17,10 +17,6 @@ library(ggplot2)
 
 XGBoost, an acronym for eXtreme Gradient Boosting, was crafted by Dr. Tianqi Chen in 2016 as a gradient-boosting algorithm. Demonstrating remarkable success, it has emerged as a formidable player in various data science competitions. Renowned for its exceptional performance, XGBoost stands out as a robust solution for tasks such as handling structured data, text classification, regression, and notably, exhibiting superior capabilities on large-scale datasets. Our vignette presents a comprehensive exploration of XGBoost, including its mathematical principles, programming language support, and practical application in classification problems.
 
-```{r cars}
-summary(cars)
-```
-
 ## Dataset Introduction
 
 You can also embed plots, for example:
@@ -37,6 +33,87 @@ Note that the `echo = FALSE` parameter was added to the code chunk to prevent pr
 
 ## Introduction to Boosted Trees and XGBoost
 
+### Gradient Boosted Decision Tree (GBDT)
+
+In GBDT, the prediction of observation i is the sum of the predicted values from each of the k trees in the ensemble.
+
+$$\hat{y} = \sum_{i=1}^{k} f_k(x_i)$$Each tree in the boosting model fits the negative gradient of the loss function to the current model's prediction, and the current model's prediction is the sum of the first k-1 trees. If we use mean squared error as the loss function in a regression task, each tree simply fits the residual.
+
+For example, suppose a person is 30 years old, and a GBDT model is used to predict his age.
+
+-   Given the dataset, the first tree predicts the person's age as 20.
+
+-   Then the second tree fits the residual, which is $$ 30 - 20 = 10 $$. The second tree outputs 7.
+
+-   The third tree fits the residual $$ 10-7=3 $$. The third tree outputs 2.
+
+-   By adding the prediction of the four trees, we get our final prediction.
+
+### XGBoost
+
+XGBoost is an efficient and scalable implementation of the gradient-boosted decision tree.
+
+#### Tree Boosting
+
+The objective function for $$k_{th}$$ tree is $$\sum_{i=1}^{n} l(y_i, \hat{y_i}^{(k)})+\sum_{i=1}^{K}\omega(f_i)$$.
+
+The first term in the objective function denotes the loss function. It can be MSE in regression or cross-entropy in classification problems. The second term $$\omega(f_i)$$ is a regularized term to control the model's complexity to avoid overfitting.
+
+When additively training the model, XGBoost used a second-order Taylor expansion to approximate the objective function instead of using the negative gradient.
+
+After derivation, the optimization goal at step k will be $$\sum_{i=1}^{n}[g_if_k(x_i) + \frac{1}{2}h_{i}f_k^2(x_i)] + \omega(f_k)$$,
+
+where $$g_i$$ and $$h_i$$ denote the first-order and second-order derivative of the loss function to the current model's prediction.
+
+i.e. $$g_i = \partial_{\hat{y_i}^{k-1}}l(y_i, \hat{y_i}^{k-1})$$ and $$h_i = \partial^2_{\hat{y_i}^{k-1}}l(y_i, \hat{y_i}^{k-1})$$.
+
+We find that the objective function for each tree depends only on $$g_i$$ and $$h_i$$, derivatives of the loss function. Therefore, XGBoost can be widely used in many scenarios, including regression, classification, and ranking problems, as long as XGBoost is given a loss function that is second-order differentiable. You can even custom your loss function in XGBoost!
+
 ## Fraud Detection with XGBoost in R
+
+### Data Preparation
+
+```{r}
+#define predictor and response variables in training set
+# NOTE: XGBoost only use matrix data
+train.x <-  data.matrix(training(data.split) %>% select(-fraud))
+train.y <-  training(data.split) %>% pull(fraud)
+
+#define predictor and response variables in validation set
+val.x <-  data.matrix(data.val %>% select(-fraud))
+val.y <-  data.val %>% pull(fraud)
+
+#define predictor and response variables in testing set
+test.x <-  data.matrix(data.test %>% select(-fraud))
+test.y <-  data.test %>% pull(fraud)
+
+#define xgb.DMatirx: This is a specialized data structure that xgboost uses for efficiency
+xgb.train <-  xgb.DMatrix(data = train.x, label = train.y)
+xgb.val <-  xgb.DMatrix(data = val.x, label = val.y)
+xgb.test <-  xgb.DMatrix(data = test.x, label = test.y)
+```
+
+### Model Fitting
+
+-   
+
+-   Define watchlist: Using a watchlist and a validation set to select the optimal number of boosting rounds(nrounds), we track the performance of the model on both the training and validation datasets during the training process. This method helps to determine the point where the model starts to overfit, and we should perform an early-stopping.
+
+```{r}
+watchlist = list(train=xgb.train, validation=xgb.val)
+
+params <- list(
+  objective = "binary:logistic", # loss function for binary classification problem
+  eta = 0.3 # learning rate
+)
+
+#fit XGBoost model and display training and testing data at each round
+model <-  xgb.train(params = params, 
+                    data = xgb.train, # Training data
+                    max.depth = 3, # Size of each individual tree
+                    watchlist=watchlist, # Track model performance on train and validation set
+                    nrounds = 500, # Number of boosting iterations
+                    early_stopping_rounds = 50) # Number of iterations we will wait for the next decrease
+```
 
 ## Results and Analysis
