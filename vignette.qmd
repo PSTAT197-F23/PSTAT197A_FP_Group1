@@ -142,7 +142,9 @@ model <-  xgb.train(params = params,
 
 ## Results and Analysis
 
-Similar in random forest,
+Our model stops boosting at 261th round, which means the model accuracy decreases in the next 50 rounds. So we know that overfitting occurs after that. Hence, we changed parameter nrounds to 261 to train our final model.
+
+Similar to the random forest, we can visualize the variable importance in XGBoost.
 
 ```{r}
 # Define final model
@@ -158,3 +160,29 @@ head(importance)
 # 3 most important features
 xgb.plot.importance(importance_matrix = importance, top_n = 5)
 ```
+
+### Prediction and Accuracy Measure
+
+```{r}
+# Use model to make predictions on test data
+pred.y <- predict(final, test.x)
+
+# Label test data according to the predicted probability
+pred.label <- ifelse(pred.y > 0.5, 1, 0)
+
+# Confusion Matrix
+confusion.matrix <- table(Predicted = pred.label, Actual = test.y)
+print(confusion.matrix)
+
+# AUC-ROC
+roc <- roc(test.y, pred.label)
+auc <- auc(roc)
+print(auc)
+
+# Visualization
+ggroc(roc) +
+  labs(title = "ROC Curve", x = "False Positive Rate", y = "True Positive Rate") + 
+  annotate("text", x = 0.2, y = 0.8, label = paste("AUC =", round(auc, 5)))
+```
+
+The plot on the right shows a very high AUC score of 0.99988, indicating that the model is almost a perfect classifier. Such an unusual result is probably because the simulated dataset is designed for practice purposes, and the data is so unbalanced.
