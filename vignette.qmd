@@ -69,7 +69,27 @@ i.e. $$g_i = \partial_{\hat{y_i}^{k-1}}l(y_i, \hat{y_i}^{k-1})$$ and $$h_i = \pa
 
 We find that the objective function for each tree depends only on $$g_i$$ and $$h_i$$, derivatives of the loss function. Therefore, XGBoost can be widely used in many scenarios, including regression, classification, and ranking problems, as long as XGBoost is given a loss function that is second-order differentiable. You can even custom your loss function in XGBoost!
 
-### Approximate Split Finding in XGBoost
+### Approximate Split Finding and Weighted Quantile Sketch in XGBoost
+
+We first look at a basic greddy approach for finding best split point.
+
+![](img/Exact_greedy_algorithm.png)
+
+In the above Exact Greedy Algorithm, we need to traverse every possible value of every feature to find the best split point. The score measures the reduction of loss function before and after the split. However, the method is inefficient when dealing with large datasets.
+
+![](img/approximate_algorithm.webp)
+
+In the approximate framework, we first select some candidate splitting points according to percentiles of the feature distribution based on some criteria. For instance, a sorted feature column contains 10 values \[1,2,2,2,2,4,5,7,9,20\]. A 0.6 quantile corresponds to 4.
+
+How do we find these candidate split points? We need to assign each feature value a weight to make candidates distribute evenly on the data. For each observation, XGBoost used its second-order derivative (i.e. $$h_i$$) s weight. Formally, let multi-set $$D_k = {(x_{1k},h_1), (x_{2k}, h_2)...(x_{nk}, h_{n})}$$ denote k-th feature value and its corresponding second-order gradient, the rank function is $$r_k(z) = \frac{1}{\sum_{(x,k) \in D_k}h}\sum_{(x,k) \in D_k, x < z}h$$.
+
+For example, given
+
+| feature value | 1   | 4   | 6   | 10  | 12  | 20  | 30  | 44  | 59  |
+|---------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+| $$h_i$$       | 0.1 | 0.1 | 0.1 | 0.1 | 0.1 | 0.1 | 0.4 | 0.2 | 0.6 |
+
+30 corresponds to $$\frac{1}{3}$$ percentile, and 59 corresponds to $$\frac{2}{3}$$ percentile.
 
 ### Other techniques in XGBoost to improve efficiency
 
