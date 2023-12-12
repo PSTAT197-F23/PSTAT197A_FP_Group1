@@ -37,17 +37,19 @@ Note that the `echo = FALSE` parameter was added to the code chunk to prevent pr
 
 In GBDT, the prediction of observation i is the sum of the predicted values from each of the k trees in the ensemble.
 
-$$\hat{y} = \sum_{i=1}^{k} f_k(x_i)$$Each tree in the boosting model fits the negative gradient of the loss function to the current model's prediction, and the current model's prediction is the sum of the first k-1 trees. If we use mean squared error as the loss function in a regression task, each tree simply fits the residual.
+$$\hat{y} = \sum_{i=1}^{k} f_k(x_i)$$Each tree in the boosting model fits the negative gradient of the loss function to the current model's prediction, and the current model's prediction is the sum of the first k-1 trees.
+
+If we use mean squared error as the loss function in a regression task, each tree simply fits the residual.
 
 For example, suppose a person is 30 years old, and a GBDT model is used to predict his age.
 
--   Given the dataset, the first tree predicts the person's age as 20.
+-   Given the dataset, suppose the first tree's prediction is 20.
 
--   Then the second tree fits the residual, which is $$ 30 - 20 = 10 $$. The second tree outputs 7.
+-   Then the second tree fits the residual, which is 30 - 20 = 10. Suppose the second tree outputs 7.
 
--   The third tree fits the residual $$ 10-7=3 $$. The third tree outputs 2.
+-   Then the third tree fits the residual 10 - 7 = 3. Suppose the third tree outputs 2.
 
--   By adding the prediction of the four trees, we get our final prediction.
+-   By adding the prediction of the three trees, we get our final prediction.
 
 ### XGBoost
 
@@ -55,33 +57,37 @@ XGBoost is an efficient and scalable implementation of the gradient-boosted deci
 
 #### Tree Boosting
 
-The objective function for $$k_{th}$$ tree is $$\sum_{i=1}^{n} l(y_i, \hat{y_i}^{(k)})+\sum_{i=1}^{K}\omega(f_i)$$.
+The objective function for k-th tree is $$\sum_{i=1}^{n} l(y_i, \hat{y_i}^{(k)})+\sum_{i=1}^{K}\omega(f_i)$$.
 
-The first term in the objective function denotes the loss function. It can be MSE in regression or cross-entropy in classification problems. The second term $$\omega(f_i)$$ is a regularized term to control the model's complexity to avoid overfitting.
+The first term in the objective function denotes the loss function. It can be MSE in regression or cross-entropy in classification problems. The second term $\omega(f_i)$ is a regularized term to control the model's complexity to avoid overfitting.
 
 When additively training the model, XGBoost used a second-order Taylor expansion to approximate the objective function instead of using the negative gradient.
 
 After derivation, the optimization goal at step k will be $$\sum_{i=1}^{n}[g_if_k(x_i) + \frac{1}{2}h_{i}f_k^2(x_i)] + \omega(f_k)$$,
 
-where $$g_i$$ and $$h_i$$ denote the first-order and second-order derivative of the loss function to the current model's prediction.
+where $g_i$ and $h_i$ denote the first-order and second-order derivative of the loss function to the current model's prediction. i.e. $g_i = \partial_{\hat{y_i}^{k-1}}l(y_i, \hat{y_i}^{k-1})$ and $h_i = \partial^2_{\hat{y_i}{k-1}}l(y_i, \hat{y_i}^{k-1})$
 
-i.e. $$g_i = \partial_{\hat{y_i}^{k-1}}l(y_i, \hat{y_i}^{k-1})$$ and $$h_i = \partial^2_{\hat{y_i}^{k-1}}l(y_i, \hat{y_i}^{k-1})$$.
+We find that the objective function for each tree depends only on $g_i$ and $h_i$, derivatives of the loss function. Therefore, XGBoost can be widely used in many scenarios, including regression, classification, and ranking problems, as long as XGBoost is given a loss function that is second-order differentiable. You can even customize your loss function in XGBoost!
 
-We find that the objective function for each tree depends only on $$g_i$$ and $$h_i$$, derivatives of the loss function. Therefore, XGBoost can be widely used in many scenarios, including regression, classification, and ranking problems, as long as XGBoost is given a loss function that is second-order differentiable. You can even custom your loss function in XGBoost!
+### Approximate Split Finding
 
-### Approximate Split Finding and Weighted Quantile Sketch in XGBoost
-
-We first look at a basic greddy approach for finding best split point.
+We first look at a basic greedy approach for finding best split point.
 
 ![](img/Exact_greedy_algorithm.png)
 
 In the above Exact Greedy Algorithm, we need to traverse every possible value of every feature to find the best split point. The score measures the reduction of loss function before and after the split. However, the method is inefficient when dealing with large datasets.
 
+Instead, XGBoost used an approximated approach to find split points efficiently.
+
 ![](img/approximate_algorithm.webp)
 
 In the approximate framework, we first select some candidate splitting points according to percentiles of the feature distribution based on some criteria. For instance, a sorted feature column contains 10 values \[1,2,2,2,2,4,5,7,9,20\]. A 0.6 quantile corresponds to 4.
 
-How do we find these candidate split points? We need to assign each feature value a weight to make candidates distribute evenly on the data. For each observation, XGBoost used its second-order derivative (i.e. $$h_i$$) s weight. Formally, let multi-set $$D_k = {(x_{1k},h_1), (x_{2k}, h_2)...(x_{nk}, h_{n})}$$ denote k-th feature value and its corresponding second-order gradient, the rank function is $$r_k(z) = \frac{1}{\sum_{(x,h) \in D_k}h}\sum_{(x,h) \in D_k, x < z}h$$.
+### Weighted Quantile Sketch
+
+How do we find these candidate split points? We cannot assign equal weights to every observation of the feature, as larger values may have a more significant impact on the loss function. Therefore, we need to calculate a weight for each feature value to make candidates distribute evenly on the data.
+
+For each observation, XGBoost used its second-order derivative $h_i$ as weight. Formally, let multi-set $D_k = {(x_{1k},h_1), (x_{2k}, h_2)…(x_{nk}, h_{n})}$ denote k-th feature value and its corresponding second-order gradient, the rank function is $$r_k(z) = \frac{1}{\sum_{(x,h) \in D_k}h}\sum_{(x,h) \in D_k, x < z}h$$.
 
 For example, given
 
@@ -89,16 +95,13 @@ For example, given
 |---------------|-----|-----|-----|-----|-----|-----|-----|-----|-----|
 | $$h_i$$       | 0.1 | 0.1 | 0.1 | 0.1 | 0.1 | 0.1 | 0.4 | 0.2 | 0.6 |
 
-30 corresponds to $$\frac{1}{3}$$ percentile, and 59 corresponds to $$\frac{2}{3}$$ percentile.
+30 corresponds to $\frac{1}{3}$ percentile, and 59 corresponds to $\frac{2}{3}$ percentile.
 
 ### Other techniques in XGBoost to improve efficiency
 
--    Each column (feature) of the dataset is pre-sorted and stored in memory as a column block. Each block contains the sorted feature column and each observation's corresponding label value. Recall that when finding the best split point in a decision tree, samples with the feature value less than the split value go to the left subtree, and samples with the feature value larger than the split point go to the right subtree. Instead of sorting in every split in every tree, this pre-sorting step is done only once. Then the efficiently sorted columns will be reused many times in building every single tree.
+-   Each column (feature) of the dataset is pre-sorted and stored in memory as a column block. Each block contains the sorted feature column and each observation's corresponding label value. Recall that when finding the best split point in a decision tree, samples with the feature value less than the split value go to the left subtree, and samples with the feature value larger than the split point go to the right subtree. Instead of sorting in every split in every tree, this pre-sorting step is done only once. Then the efficiently sorted columns will be reused many times in building every single tree.
 
-```{=html}
-<!-- -->
-```
--   XGBoost supports parallel computing during the process of finding the best split point in building a single tree. Then the information gain calculation for each feature can be done in parallel. Moreover, You can tune the parameter nthread to control the number of cores used in training XGBoost model.
+-   XGBoost supports parallel computing during the process of finding the best split point in building a single tree. Then the information gain calculation for each feature can be done in parallel. Moreover, You can tune the parameter nthread to control the number of cores used in training the XGBoost model.
 
 -   XGBoost supports column subsampling similar to a random forest.
 
@@ -153,6 +156,8 @@ xgb.train <-  xgb.DMatrix(data = train.x, label = train.y)
 xgb.val <-  xgb.DMatrix(data = val.x, label = val.y)
 xgb.test <-  xgb.DMatrix(data = test.x, label = test.y)
 ```
+
+Here we use a watchlist and a validation set to select the optimal number of boosting rounds(nrounds). When training, we track the performance of the model on the training and validation datasets. Watchlist is usually used with the early_stopping_rounds parameter to determine when the model starts to overfit and we should stop.
 
 ```{r}
 watchlist = list(train=xgb.train, validation=xgb.val)
