@@ -26,5 +26,11 @@ root directory
 └── .gitignore
 ```
 
-Reference list: https://xgboost.readthedocs.io/en/stable/tutorials/
+Reference list: 
+
+- He, Shen, et al. “An Effective Cost-Sensitive XGBoost Method for Malicious Urls Detection in Imbalanced Dataset.” IEEE Access, vol. 9, 2021, pp. 93089–93096, doi:10.1109/access.2021.3093094. 
+
+- ULB, Machine Learning Group -. “Credit Card Fraud Detection.” Kaggle, 23 Mar. 2018, www.kaggle.com/datasets/mlg-ulb/creditcardfraud. Accessed 06 Dec. 2023. 
+
+- “XGBoost Documentation.” XGBoost Documentation - Xgboost 2.0.2 Documentation, xgboost.readthedocs.io/. 
 
