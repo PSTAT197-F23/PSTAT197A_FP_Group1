@@ -13,7 +13,6 @@ library(pROC)
 library(ggplot2)
 library(corrplot)
 
-
 data <- read_csv("data/card_transdata.csv") 
 ```
 
@@ -32,11 +31,11 @@ head(data)
 
 The variable explanations are as follows:
 
--   dist_home: the distance from home where the transaction happened
+-   distance_from_home: the distance from home where the transaction happened
 
--   dist_last_transact: the distance from last transaction happened
+-   distance_from_last_transact: the distance from last transaction happened
 
--   ratio_to_med_price: ratio of transaction price to median purchase price
+-   ratio_to_median_price: ratio of transaction price to median purchase price
 
 -   repeat_retailer: Is the transaction happened from same retailer
 
@@ -89,6 +88,21 @@ This graph represents the distribution of 'fraud'. Around 91% of the transaction
 ## Data Preprocessing
 
 In preparation for modeling, the dataset undergoes initial processing steps. Outliers are systematically trimmed, and selected variables are renamed for clarity and conciseness. Subsequently, the mutate function is employed to enact transformations, notably generating scaled representations for the columns 'dist_home,' 'dist_last_transact,' and 'ratio_to_med_price.'
+
+```{r}
+trim <- function(x, .at){
+  x[abs(x) > .at] <- sign(x[abs(x) > .at])*.at
+  return(x)
+}
+
+# rename and scale: since some variable are on distance scale/some are ratio
+data <- data %>%
+  rename(dist_home = distance_from_home,
+         dist_last_transact = distance_from_last_transaction,
+         ratio_to_med_price = ratio_to_median_purchase_price) %>%
+  mutate(across(.cols = c(dist_home, dist_last_transact, ratio_to_med_price), 
+                ~ trim(scale((.x))[, 1], .at = 3)))
+```
 
 ## Introduction to Boosted Trees and XGBoost
 
@@ -237,14 +251,14 @@ model <-  xgb.train(params = params,
 
 ## Results and Analysis
 
-Our model stops boosting at 261th round, which means the model accuracy decreases in the next 50 rounds. So we know that overfitting occurs after that. Hence, we changed parameter nrounds to 261 to train our final model.
+Our model stops boosting at 261th round, which means the model accuracy decreases in the next 50 rounds. So we know that overfitting occurs after that. Hence, we changed parameter nrounds to 216 to train our final model.
 
 Similar to the random forest, we can visualize the variable importance in XGBoost.
 
 ```{r}
 # Define final model
 # The argument verbose = 0 tells R not to display the training and testing error for each round.
-final <-  xgboost(params = params, data = xgb.train, max.depth = 3, nrounds = 261, verbose = 0)
+final <-  xgboost(params = params, data = xgb.train, max.depth = 3, nrounds = 216, verbose = 0)
 
 ### Feature Importance
 # WRITE-UP refer to: https://cran.r-project.org/web/packages/xgboost/vignettes/discoverYourData.html
