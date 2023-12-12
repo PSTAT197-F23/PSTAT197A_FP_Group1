@@ -11,6 +11,10 @@ library(xgboost)
 library(tidyverse)
 library(pROC)
 library(ggplot2)
+library(corrplot)
+
+
+data <- read_csv("data/card_transdata.csv") 
 ```
 
 ## Abstract
@@ -19,17 +23,71 @@ XGBoost, an acronym for eXtreme Gradient Boosting, was crafted by Dr. Tianqi Che
 
 ## Dataset Introduction
 
-You can also embed plots, for example:
+Our vignette is conducted on a simulated "Credit Card Fraud" dataset obtained on Kaggle (https://www.kaggle.com/datasets/dhanushnarayananr/credit-card-fraud/data). This dataset presents a binary classification problem with transactions labeled as either fraudulent or legitimate. With 8 variables and a total of 1,000,000 observations, only 8.74% (87,403) are marked as fraudulent, highlighting a significant class imbalance.
 
 ```{r pressure, echo=FALSE}
-plot(pressure)
+head(data)
+
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+The variable explanations are as follows:
+
+-   dist_home: the distance from home where the transaction happened
+
+-   dist_last_transact: the distance from last transaction happened
+
+-   ratio_to_med_price: ratio of transaction price to median purchase price
+
+-   repeat_retailer: Is the transaction happened from same retailer
+
+-   used_chip: Is the transaction through credit card?
+
+-   used_pin_number - Is the transaction happened by using PIN number?
+
+-   online_order - Is the transaction an online order?
+
+-   fraud - Is the transaction fraudulent.
 
 ## Exploratory Data Analysis
 
+This dataset contains no missing value, therefore there is no imputation needed.
+
+```{r pressure, echo=FALSE}
+par(mfrow = c(3, 3))
+
+for (col in colnames(data)) {
+  density_values <- density(data[[col]])
+  plot(density_values, main = col, col = "skyblue", lwd = 2)
+}
+```
+
+We can observe from the density curve graph of each variable that except for the first three, the other 5 variables including our response variable 'fraud' are binary. But the first three variables are greatly skewed.
+
+```{r pressure, echo=FALSE}
+par(mfrow = c(1, 1))
+# Correlation
+data %>%
+  cor(use = 'everything') %>%
+  corrplot(type = 'lower')
+
+```
+
+From the correlation plot, the numerical variable 'ratio_to_median' has a positive correlation with respect to 'fraud', and then are 'distance_from_home' and 'online_order'. Other than that, 'used_pin_number' has negatively correlated with 'fraud'.
+
+```{r pressure, echo=FALSE}
+data %>%
+  ggplot(aes(x = fraud)) +
+  geom_bar() +
+  labs(title = "Fraud Distribution", x = 'fraud', y = 'count') +
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+```
+
+This graph represents the distribution of 'fraud'. Around 91% of the transactions are not fraud and 9% are fraud, which reflects a imbalance in the data. This imbalance suggests adapting performance metrics like AUC-ROC, f1 score as evaluation metrics instead of "accurary" to assess the ML model.
+
 ## Data Preprocessing
+
 
 ## Introduction to Boosted Trees and XGBoost
 
