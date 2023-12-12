@@ -6,10 +6,10 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="author" content="Mu Niu">
-<meta name="dcterms.date" content="2023-12-01">
+<meta name="author" content="Mu Niu, Yixin Xue, Amber Wang, David Lin, Qifei Cui">
+<meta name="dcterms.date" content="2023-12-08">
 
-<title>vignette</title>
+<title>Using XGBoost for Fraud Detection</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -70,6 +70,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="vignette_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="vignette_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
 
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
 
 </head>
 
@@ -81,7 +83,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">vignette</h1>
+<h1 class="title">Using XGBoost for Fraud Detection</h1>
 </div>
 
 
@@ -91,14 +93,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Author</div>
     <div class="quarto-title-meta-contents">
-             <p>Mu Niu </p>
+             <p>Mu Niu, Yixin Xue, Amber Wang, David Lin, Qifei Cui </p>
           </div>
   </div>
     
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">December 1, 2023</p>
+      <p class="date">December 8, 2023</p>
     </div>
   </div>
   
@@ -108,32 +110,634 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 </header>
 
-<section id="r-markdown" class="level2">
-<h2 class="anchored" data-anchor-id="r-markdown">R Markdown</h2>
-<p>This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <a href="http://rmarkdown.rstudio.com" class="uri">http://rmarkdown.rstudio.com</a>.</p>
-<p>When you click the <strong>Knit</strong> button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(cars)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidymodels)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>── Attaching packages ────────────────────────────────────── tidymodels 1.1.1 ──</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>✔ broom        1.0.5     ✔ recipes      1.0.8
+✔ dials        1.2.0     ✔ rsample      1.2.0
+✔ dplyr        1.1.4     ✔ tibble       3.2.1
+✔ ggplot2      3.4.4     ✔ tidyr        1.3.0
+✔ infer        1.0.5     ✔ tune         1.1.2
+✔ modeldata    1.2.0     ✔ workflows    1.1.3
+✔ parsnip      1.1.1     ✔ workflowsets 1.0.1
+✔ purrr        1.0.2     ✔ yardstick    1.2.0</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>── Conflicts ───────────────────────────────────────── tidymodels_conflicts() ──
+✖ purrr::discard() masks scales::discard()
+✖ dplyr::filter()  masks stats::filter()
+✖ dplyr::lag()     masks stats::lag()
+✖ recipes::step()  masks stats::step()
+• Dig deeper into tidy modeling with R at https://www.tmwr.org</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(xgboost)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: 'xgboost'</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following object is masked from 'package:dplyr':
+
+    slice</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
+✔ forcats   1.0.0     ✔ readr     2.1.4
+✔ lubridate 1.9.3     ✔ stringr   1.5.1</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+✖ readr::col_factor() masks scales::col_factor()
+✖ purrr::discard()    masks scales::discard()
+✖ dplyr::filter()     masks stats::filter()
+✖ stringr::fixed()    masks recipes::fixed()
+✖ dplyr::lag()        masks stats::lag()
+✖ xgboost::slice()    masks dplyr::slice()
+✖ readr::spec()       masks yardstick::spec()
+ℹ Use the conflicted package (&lt;http://conflicted.r-lib.org/&gt;) to force all conflicts to become errors</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(pROC)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Type 'citation("pROC")' for a citation.
+
+Attaching package: 'pROC'
+
+The following objects are masked from 'package:stats':
+
+    cov, smooth, var</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(corrplot)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>corrplot 0.92 loaded</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"data/card_transdata.csv"</span>) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Rows: 1000000 Columns: 8
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: ","
+dbl (8): distance_from_home, distance_from_last_transaction, ratio_to_median...
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+</div>
+</div>
+<section id="abstract" class="level2">
+<h2 class="anchored" data-anchor-id="abstract">Abstract</h2>
+<p>XGBoost, an acronym for eXtreme Gradient Boosting, was crafted by Dr.&nbsp;Tianqi Chen in 2016 as a gradient-boosting algorithm. Demonstrating remarkable success, it has emerged as a formidable player in various data science competitions. Renowned for its exceptional performance, XGBoost stands out as a robust solution for tasks such as handling structured data, text classification, regression, and notably, exhibiting superior capabilities on large-scale datasets. Our vignette presents a comprehensive exploration of XGBoost, including its mathematical principles, programming language support, and practical application in classification problems.</p>
+</section>
+<section id="dataset-introduction" class="level2">
+<h2 class="anchored" data-anchor-id="dataset-introduction">Dataset Introduction</h2>
+<p>Our vignette is conducted on a simulated “Credit Card Fraud” dataset obtained on Kaggle (https://www.kaggle.com/datasets/dhanushnarayananr/credit-card-fraud/data). This dataset presents a binary classification problem, classifying transactions as either fraudulent or legitimate. With 8 variables and a total of 1,000,000 observations, only 8.74% (87,403) are marked as fraudulent, highlighting a significant class imbalance.</p>
+<div class="cell">
 <div class="cell-output cell-output-stdout">
-<pre><code>     speed           dist       
- Min.   : 4.0   Min.   :  2.00  
- 1st Qu.:12.0   1st Qu.: 26.00  
- Median :15.0   Median : 36.00  
- Mean   :15.4   Mean   : 42.98  
- 3rd Qu.:19.0   3rd Qu.: 56.00  
- Max.   :25.0   Max.   :120.00  </code></pre>
+<pre><code># A tibble: 6 × 8
+  distance_from_home distance_from_last_transaction ratio_to_median_purchase_p…¹
+               &lt;dbl&gt;                          &lt;dbl&gt;                        &lt;dbl&gt;
+1              57.9                           0.311                       1.95  
+2              10.8                           0.176                       1.29  
+3               5.09                          0.805                       0.428 
+4               2.25                          5.60                        0.363 
+5              44.2                           0.566                       2.22  
+6               5.59                         13.3                         0.0648
+# ℹ abbreviated name: ¹​ratio_to_median_purchase_price
+# ℹ 5 more variables: repeat_retailer &lt;dbl&gt;, used_chip &lt;dbl&gt;,
+#   used_pin_number &lt;dbl&gt;, online_order &lt;dbl&gt;, fraud &lt;dbl&gt;</code></pre>
+</div>
+</div>
+<p>The variable explanations are as follows:</p>
+<ul>
+<li><p>dist_home: the distance from home where the transaction happened</p></li>
+<li><p>dist_last_transact: the distance from last transaction happened</p></li>
+<li><p>ratio_to_med_price: ratio of transaction price to median purchase price</p></li>
+<li><p>repeat_retailer: Is the transaction happened from same retailer</p></li>
+<li><p>used_chip: Is the transaction through credit card?</p></li>
+<li><p>used_pin_number - Is the transaction happened by using PIN number?</p></li>
+<li><p>online_order - Is the transaction an online order?</p></li>
+<li><p>fraud - Is the transaction fraudulent.</p></li>
+</ul>
+</section>
+<section id="exploratory-data-analysis" class="level2">
+<h2 class="anchored" data-anchor-id="exploratory-data-analysis">Exploratory Data Analysis</h2>
+<p>This dataset contains no missing value, therefore there is no imputation needed.</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="vignette_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>We can observe from the density curve graph of each variable that except for the first three, the other 5 variables including our response variable ‘fraud’ are binary. But the first three variables are greatly skewed.</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="vignette_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>From the correlation plot, the numerical variable ‘ratio_to_median’ has a positive correlation with respect to ‘fraud’, and then are ‘distance_from_home’ and ‘online_order’. Other than that, ‘used_pin_number’ has negatively correlated with ‘fraud’.</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="vignette_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>This graph represents the distribution of ‘fraud’. Around 91% of the transactions are not fraud and 9% are fraud, which reflects a imbalance in the data. This imbalance suggests adapting performance metrics like AUC-ROC, f1 score as evaluation metrics instead of “accurary” to assess the ML model.</p>
+</section>
+<section id="data-preprocessing" class="level2">
+<h2 class="anchored" data-anchor-id="data-preprocessing">Data Preprocessing</h2>
+<p>In preparation for modeling, the dataset undergoes initial processing steps. Outliers are systematically trimmed, and selected variables are renamed for clarity and conciseness. Subsequently, the mutate function is employed to enact transformations, notably generating scaled representations for the columns ‘dist_home,’ ‘dist_last_transact,’ and ‘ratio_to_med_price.’</p>
+</section>
+<section id="introduction-to-boosted-trees-and-xgboost" class="level2">
+<h2 class="anchored" data-anchor-id="introduction-to-boosted-trees-and-xgboost">Introduction to Boosted Trees and XGBoost</h2>
+<section id="gradient-boosted-decision-tree-gbdt" class="level3">
+<h3 class="anchored" data-anchor-id="gradient-boosted-decision-tree-gbdt">Gradient Boosted Decision Tree (GBDT)</h3>
+<p>In GBDT, the prediction of observation i is the sum of the predicted values from each of the k trees in the ensemble.</p>
+<p><span class="math display">\[\hat{y} = \sum_{i=1}^{k} f_k(x_i)\]</span>Each tree in the boosting model fits the negative gradient of the loss function to the current model’s prediction, and the current model’s prediction is the sum of the first k-1 trees.</p>
+<p>If we use mean squared error as the loss function in a regression task, each tree simply fits the residual.</p>
+<p>For example, suppose a person is 30 years old, and a GBDT model is used to predict his age.</p>
+<ul>
+<li><p>Given the dataset, suppose the first tree’s prediction is 20.</p></li>
+<li><p>Then the second tree fits the residual, which is 30 - 20 = 10. Suppose the second tree outputs 7.</p></li>
+<li><p>Then the third tree fits the residual 10 - 7 = 3. Suppose the third tree outputs 2.</p></li>
+<li><p>By adding the prediction of the three trees, we get our final prediction.</p></li>
+</ul>
+</section>
+<section id="xgboost" class="level3">
+<h3 class="anchored" data-anchor-id="xgboost">XGBoost</h3>
+<p>XGBoost is an efficient and scalable implementation of the gradient-boosted decision tree.</p>
+<section id="tree-boosting" class="level4">
+<h4 class="anchored" data-anchor-id="tree-boosting">Tree Boosting</h4>
+<p>The objective function for k-th tree is <span class="math display">\[\sum_{i=1}^{n} l(y_i, \hat{y_i}^{(k)})+\sum_{i=1}^{K}\omega(f_i)\]</span>.</p>
+<p>The first term in the objective function denotes the loss function. It can be MSE in regression or cross-entropy in classification problems. The second term <span class="math inline">\(\omega(f_i)\)</span> is a regularized term to control the model’s complexity to avoid overfitting.</p>
+<p>When additively training the model, XGBoost used a second-order Taylor expansion to approximate the objective function instead of using the negative gradient.</p>
+<p>After derivation, the optimization goal at step k will be <span class="math display">\[\sum_{i=1}^{n}[g_if_k(x_i) + \frac{1}{2}h_{i}f_k^2(x_i)] + \omega(f_k)\]</span>,</p>
+<p>where <span class="math inline">\(g_i\)</span> and <span class="math inline">\(h_i\)</span> denote the first-order and second-order derivative of the loss function to the current model’s prediction. i.e.&nbsp;<span class="math inline">\(g_i = \partial_{\hat{y_i}^{k-1}}l(y_i, \hat{y_i}^{k-1})\)</span> and <span class="math inline">\(h_i = \partial^2_{\hat{y_i}{k-1}}l(y_i, \hat{y_i}^{k-1})\)</span></p>
+<p>We find that the objective function for each tree depends only on <span class="math inline">\(g_i\)</span> and <span class="math inline">\(h_i\)</span>, derivatives of the loss function. Therefore, XGBoost can be widely used in many scenarios, including regression, classification, and ranking problems, as long as XGBoost is given a loss function that is second-order differentiable. You can even customize your loss function in XGBoost!</p>
+</section>
+</section>
+<section id="approximate-split-finding" class="level3">
+<h3 class="anchored" data-anchor-id="approximate-split-finding">Approximate Split Finding</h3>
+<p>We first look at a basic greedy approach for finding best split point.</p>
+<p><img src="img/Exact_greedy_algorithm.png" class="img-fluid"></p>
+<p>In the above Exact Greedy Algorithm, we need to traverse every possible value of every feature to find the best split point. The score measures the reduction of loss function before and after the split. However, the method is inefficient when dealing with large datasets.</p>
+<p>Instead, XGBoost used an approximated approach to find split points efficiently.</p>
+<p><img src="img/approximate_algorithm.webp" class="img-fluid"></p>
+<p>In the approximate framework, we first select some candidate splitting points according to percentiles of the feature distribution based on some criteria. For instance, a sorted feature column contains 10 values [1,2,2,2,2,4,5,7,9,20]. A 0.6 quantile corresponds to 4.</p>
+</section>
+<section id="weighted-quantile-sketch" class="level3">
+<h3 class="anchored" data-anchor-id="weighted-quantile-sketch">Weighted Quantile Sketch</h3>
+<p>How do we find these candidate split points? We cannot assign equal weights to every observation of the feature, as larger values may have a more significant impact on the loss function. Therefore, we need to calculate a weight for each feature value to make candidates distribute evenly on the data.</p>
+<p>For each observation, XGBoost used its second-order derivative <span class="math inline">\(h_i\)</span> as weight. Formally, let multi-set <span class="math inline">\(D_k = {(x_{1k},h_1), (x_{2k}, h_2)…(x_{nk}, h_{n})}\)</span> denote k-th feature value and its corresponding second-order gradient, the rank function is <span class="math display">\[r_k(z) = \frac{1}{\sum_{(x,h) \in D_k}h}\sum_{(x,h) \in D_k, x &lt; z}h\]</span>.</p>
+<p>For example, given</p>
+<table class="table">
+<thead>
+<tr class="header">
+<th>feature value</th>
+<th>1</th>
+<th>4</th>
+<th>6</th>
+<th>10</th>
+<th>12</th>
+<th>20</th>
+<th>30</th>
+<th>44</th>
+<th>59</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math display">\[h_i\]</span></td>
+<td>0.1</td>
+<td>0.1</td>
+<td>0.1</td>
+<td>0.1</td>
+<td>0.1</td>
+<td>0.1</td>
+<td>0.4</td>
+<td>0.2</td>
+<td>0.6</td>
+</tr>
+</tbody>
+</table>
+<p>30 corresponds to <span class="math inline">\(\frac{1}{3}\)</span> percentile, and 59 corresponds to <span class="math inline">\(\frac{2}{3}\)</span> percentile.</p>
+</section>
+<section id="other-techniques-in-xgboost-to-improve-efficiency" class="level3">
+<h3 class="anchored" data-anchor-id="other-techniques-in-xgboost-to-improve-efficiency">Other techniques in XGBoost to improve efficiency</h3>
+<ul>
+<li><p>Each column (feature) of the dataset is pre-sorted and stored in memory as a column block. Each block contains the sorted feature column and each observation’s corresponding label value. Recall that when finding the best split point in a decision tree, samples with the feature value less than the split value go to the left subtree, and samples with the feature value larger than the split point go to the right subtree. Instead of sorting in every split in every tree, this pre-sorting step is done only once. Then the efficiently sorted columns will be reused many times in building every single tree.</p></li>
+<li><p>XGBoost supports parallel computing during the process of finding the best split point in building a single tree. Then the information gain calculation for each feature can be done in parallel. Moreover, You can tune the parameter nthread to control the number of cores used in training the XGBoost model.</p></li>
+<li><p>XGBoost supports column subsampling similar to a random forest.</p></li>
+</ul>
+</section>
+</section>
+<section id="fraud-detection-with-xgboost-in-r" class="level2">
+<h2 class="anchored" data-anchor-id="fraud-detection-with-xgboost-in-r">Fraud Detection with XGBoost in R</h2>
+<section id="data-preparation" class="level3">
+<h3 class="anchored" data-anchor-id="data-preparation">Data Preparation</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co">#set seed for reproducibility</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">197</span>)</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="co">#split training/validation/testing</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>data.split <span class="ot">&lt;-</span> data <span class="sc">%&gt;%</span> </span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">initial_split</span>(<span class="at">prop =</span> <span class="fl">0.6</span>, <span class="at">strata =</span> fraud)</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>test.split <span class="ot">&lt;-</span> <span class="fu">initial_split</span>(<span class="fu">testing</span>(data.split), <span class="at">prop =</span> <span class="fl">0.5</span>, <span class="at">strata =</span> fraud)</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>data.val <span class="ot">&lt;-</span> <span class="fu">training</span>(test.split)</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>data.test <span class="ot">&lt;-</span> <span class="fu">testing</span>(test.split)</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a><span class="co">#define predictor and response variables in training set</span></span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a><span class="co"># </span><span class="al">NOTE</span><span class="co">: XGBoost only use matrix data</span></span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>train.x <span class="ot">&lt;-</span>  <span class="fu">data.matrix</span>(<span class="fu">training</span>(data.split) <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="sc">-</span>fraud))</span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>train.y <span class="ot">&lt;-</span>  <span class="fu">training</span>(data.split) <span class="sc">%&gt;%</span> <span class="fu">pull</span>(fraud)</span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a><span class="co">#define predictor and response variables in validation set</span></span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>val.x <span class="ot">&lt;-</span>  <span class="fu">data.matrix</span>(data.val <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="sc">-</span>fraud))</span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>val.y <span class="ot">&lt;-</span>  data.val <span class="sc">%&gt;%</span> <span class="fu">pull</span>(fraud)</span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a><span class="co">#define predictor and response variables in testing set</span></span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a>test.x <span class="ot">&lt;-</span>  <span class="fu">data.matrix</span>(data.test <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="sc">-</span>fraud))</span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a>test.y <span class="ot">&lt;-</span>  data.test <span class="sc">%&gt;%</span> <span class="fu">pull</span>(fraud)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="model-fitting" class="level3">
+<h3 class="anchored" data-anchor-id="model-fitting">Model Fitting</h3>
+<ul>
+<li><p>objective: What’s your goal? In this case, we use ‘binary:logistic’ to predict the probability of having a fraud based on the predictor variables</p></li>
+<li><p>eta: How fast to learn? default value 0.3</p></li>
+<li><p>data: Training data in DMatrix structure</p></li>
+<li><p>max.depth: The size of each tree and a rule of thumb is to use 2 or 3 to prevent overfitting</p></li>
+<li><p>watchlist: Track model performance on training and validation data during the training process to prevent overfitting</p></li>
+<li><p>nrounds: number of boosting rounds</p></li>
+<li><p>early_stopping_rounds: Stop the training process if the model’s accuracy on validation set hasn’t improved for the specified number of rounds</p></li>
+</ul>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co">#define xgb.DMatirx: This is a specialized data structure that xgboost uses for efficiency</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>xgb.train <span class="ot">&lt;-</span>  <span class="fu">xgb.DMatrix</span>(<span class="at">data =</span> train.x, <span class="at">label =</span> train.y)</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>xgb.val <span class="ot">&lt;-</span>  <span class="fu">xgb.DMatrix</span>(<span class="at">data =</span> val.x, <span class="at">label =</span> val.y)</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>xgb.test <span class="ot">&lt;-</span>  <span class="fu">xgb.DMatrix</span>(<span class="at">data =</span> test.x, <span class="at">label =</span> test.y)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Here we use a watchlist and a validation set to select the optimal number of boosting rounds(nrounds). When training, we track the performance of the model on the training and validation datasets. Watchlist is usually used with the early_stopping_rounds parameter to determine when the model starts to overfit and we should stop.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>watchlist <span class="ot">=</span> <span class="fu">list</span>(<span class="at">train=</span>xgb.train, <span class="at">validation=</span>xgb.val)</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>params <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">objective =</span> <span class="st">"binary:logistic"</span>, <span class="co"># loss function for binary classification problem</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">eta =</span> <span class="fl">0.3</span> <span class="co"># learning rate</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a><span class="co">#fit XGBoost model and display training and testing data at each round</span></span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>model <span class="ot">&lt;-</span>  <span class="fu">xgb.train</span>(<span class="at">params =</span> params, </span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>                    <span class="at">data =</span> xgb.train, <span class="co"># Training data</span></span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>                    <span class="at">max.depth =</span> <span class="dv">3</span>, <span class="co"># Size of each individual tree</span></span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>                    <span class="at">watchlist=</span>watchlist, <span class="co"># Track model performance on train and validation set</span></span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>                    <span class="at">nrounds =</span> <span class="dv">500</span>, <span class="co"># Number of boosting iterations</span></span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>                    <span class="at">early_stopping_rounds =</span> <span class="dv">50</span>) <span class="co"># Number of iterations we will wait for the next decrease</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] train-logloss:0.451127  validation-logloss:0.451234 
+Multiple eval metrics are present. Will use validation_logloss for early stopping.
+Will train until validation_logloss hasn't improved in 50 rounds.
+
+[2] train-logloss:0.315480  validation-logloss:0.315400 
+[3] train-logloss:0.230386  validation-logloss:0.230380 
+[4] train-logloss:0.172470  validation-logloss:0.172339 
+[5] train-logloss:0.132665  validation-logloss:0.132591 
+[6] train-logloss:0.103900  validation-logloss:0.103731 
+[7] train-logloss:0.083184  validation-logloss:0.083053 
+[8] train-logloss:0.068000  validation-logloss:0.067906 
+[9] train-logloss:0.056529  validation-logloss:0.056380 
+[10]    train-logloss:0.047899  validation-logloss:0.047716 
+[11]    train-logloss:0.041405  validation-logloss:0.041280 
+[12]    train-logloss:0.035617  validation-logloss:0.035361 
+[13]    train-logloss:0.031879  validation-logloss:0.031617 
+[14]    train-logloss:0.029015  validation-logloss:0.028713 
+[15]    train-logloss:0.025746  validation-logloss:0.025646 
+[16]    train-logloss:0.022735  validation-logloss:0.022630 
+[17]    train-logloss:0.020837  validation-logloss:0.020740 
+[18]    train-logloss:0.018697  validation-logloss:0.018630 
+[19]    train-logloss:0.017351  validation-logloss:0.017269 
+[20]    train-logloss:0.015829  validation-logloss:0.015803 
+[21]    train-logloss:0.014291  validation-logloss:0.014280 
+[22]    train-logloss:0.013309  validation-logloss:0.013313 
+[23]    train-logloss:0.012142  validation-logloss:0.012122 
+[24]    train-logloss:0.011534  validation-logloss:0.011516 
+[25]    train-logloss:0.010776  validation-logloss:0.010751 
+[26]    train-logloss:0.009838  validation-logloss:0.009849 
+[27]    train-logloss:0.009218  validation-logloss:0.009230 
+[28]    train-logloss:0.008827  validation-logloss:0.008860 
+[29]    train-logloss:0.008284  validation-logloss:0.008290 
+[30]    train-logloss:0.007880  validation-logloss:0.007913 
+[31]    train-logloss:0.007359  validation-logloss:0.007387 
+[32]    train-logloss:0.006815  validation-logloss:0.006847 
+[33]    train-logloss:0.006499  validation-logloss:0.006555 
+[34]    train-logloss:0.006125  validation-logloss:0.006183 
+[35]    train-logloss:0.005733  validation-logloss:0.005795 
+[36]    train-logloss:0.005460  validation-logloss:0.005519 
+[37]    train-logloss:0.005100  validation-logloss:0.005168 
+[38]    train-logloss:0.004777  validation-logloss:0.004857 
+[39]    train-logloss:0.004418  validation-logloss:0.004494 
+[40]    train-logloss:0.004262  validation-logloss:0.004343 
+[41]    train-logloss:0.004010  validation-logloss:0.004088 
+[42]    train-logloss:0.003817  validation-logloss:0.003903 
+[43]    train-logloss:0.003683  validation-logloss:0.003777 
+[44]    train-logloss:0.003497  validation-logloss:0.003580 
+[45]    train-logloss:0.003383  validation-logloss:0.003470 
+[46]    train-logloss:0.003141  validation-logloss:0.003228 
+[47]    train-logloss:0.003010  validation-logloss:0.003111 
+[48]    train-logloss:0.002836  validation-logloss:0.002926 
+[49]    train-logloss:0.002677  validation-logloss:0.002775 
+[50]    train-logloss:0.002568  validation-logloss:0.002661 
+[51]    train-logloss:0.002416  validation-logloss:0.002515 
+[52]    train-logloss:0.002235  validation-logloss:0.002337 
+[53]    train-logloss:0.002161  validation-logloss:0.002264 
+[54]    train-logloss:0.002057  validation-logloss:0.002166 
+[55]    train-logloss:0.001896  validation-logloss:0.002013 
+[56]    train-logloss:0.001812  validation-logloss:0.001927 
+[57]    train-logloss:0.001728  validation-logloss:0.001847 
+[58]    train-logloss:0.001664  validation-logloss:0.001779 
+[59]    train-logloss:0.001565  validation-logloss:0.001683 
+[60]    train-logloss:0.001492  validation-logloss:0.001611 
+[61]    train-logloss:0.001448  validation-logloss:0.001568 
+[62]    train-logloss:0.001392  validation-logloss:0.001515 
+[63]    train-logloss:0.001326  validation-logloss:0.001444 
+[64]    train-logloss:0.001247  validation-logloss:0.001365 
+[65]    train-logloss:0.001195  validation-logloss:0.001316 
+[66]    train-logloss:0.001156  validation-logloss:0.001277 
+[67]    train-logloss:0.001101  validation-logloss:0.001227 
+[68]    train-logloss:0.001058  validation-logloss:0.001188 
+[69]    train-logloss:0.001015  validation-logloss:0.001144 
+[70]    train-logloss:0.000985  validation-logloss:0.001116 
+[71]    train-logloss:0.000943  validation-logloss:0.001079 
+[72]    train-logloss:0.000909  validation-logloss:0.001041 
+[73]    train-logloss:0.000860  validation-logloss:0.000993 
+[74]    train-logloss:0.000827  validation-logloss:0.000964 
+[75]    train-logloss:0.000799  validation-logloss:0.000936 
+[76]    train-logloss:0.000775  validation-logloss:0.000913 
+[77]    train-logloss:0.000744  validation-logloss:0.000887 
+[78]    train-logloss:0.000712  validation-logloss:0.000853 
+[79]    train-logloss:0.000683  validation-logloss:0.000827 
+[80]    train-logloss:0.000622  validation-logloss:0.000770 
+[81]    train-logloss:0.000607  validation-logloss:0.000756 
+[82]    train-logloss:0.000589  validation-logloss:0.000737 
+[83]    train-logloss:0.000567  validation-logloss:0.000715 
+[84]    train-logloss:0.000550  validation-logloss:0.000699 
+[85]    train-logloss:0.000532  validation-logloss:0.000680 
+[86]    train-logloss:0.000513  validation-logloss:0.000662 
+[87]    train-logloss:0.000498  validation-logloss:0.000648 
+[88]    train-logloss:0.000470  validation-logloss:0.000622 
+[89]    train-logloss:0.000454  validation-logloss:0.000609 
+[90]    train-logloss:0.000433  validation-logloss:0.000590 
+[91]    train-logloss:0.000420  validation-logloss:0.000579 
+[92]    train-logloss:0.000401  validation-logloss:0.000563 
+[93]    train-logloss:0.000387  validation-logloss:0.000552 
+[94]    train-logloss:0.000371  validation-logloss:0.000535 
+[95]    train-logloss:0.000357  validation-logloss:0.000527 
+[96]    train-logloss:0.000349  validation-logloss:0.000520 
+[97]    train-logloss:0.000338  validation-logloss:0.000512 
+[98]    train-logloss:0.000327  validation-logloss:0.000497 
+[99]    train-logloss:0.000312  validation-logloss:0.000482 
+[100]   train-logloss:0.000302  validation-logloss:0.000473 
+[101]   train-logloss:0.000292  validation-logloss:0.000463 
+[102]   train-logloss:0.000283  validation-logloss:0.000455 
+[103]   train-logloss:0.000275  validation-logloss:0.000449 
+[104]   train-logloss:0.000258  validation-logloss:0.000432 
+[105]   train-logloss:0.000250  validation-logloss:0.000424 
+[106]   train-logloss:0.000242  validation-logloss:0.000421 
+[107]   train-logloss:0.000233  validation-logloss:0.000408 
+[108]   train-logloss:0.000224  validation-logloss:0.000401 
+[109]   train-logloss:0.000218  validation-logloss:0.000395 
+[110]   train-logloss:0.000211  validation-logloss:0.000390 
+[111]   train-logloss:0.000194  validation-logloss:0.000375 
+[112]   train-logloss:0.000187  validation-logloss:0.000369 
+[113]   train-logloss:0.000182  validation-logloss:0.000363 
+[114]   train-logloss:0.000177  validation-logloss:0.000360 
+[115]   train-logloss:0.000171  validation-logloss:0.000358 
+[116]   train-logloss:0.000166  validation-logloss:0.000352 
+[117]   train-logloss:0.000160  validation-logloss:0.000346 
+[118]   train-logloss:0.000155  validation-logloss:0.000345 
+[119]   train-logloss:0.000152  validation-logloss:0.000342 
+[120]   train-logloss:0.000147  validation-logloss:0.000341 
+[121]   train-logloss:0.000142  validation-logloss:0.000337 
+[122]   train-logloss:0.000138  validation-logloss:0.000333 
+[123]   train-logloss:0.000133  validation-logloss:0.000329 
+[124]   train-logloss:0.000130  validation-logloss:0.000328 
+[125]   train-logloss:0.000126  validation-logloss:0.000324 
+[126]   train-logloss:0.000123  validation-logloss:0.000324 
+[127]   train-logloss:0.000119  validation-logloss:0.000322 
+[128]   train-logloss:0.000116  validation-logloss:0.000319 
+[129]   train-logloss:0.000112  validation-logloss:0.000315 
+[130]   train-logloss:0.000109  validation-logloss:0.000313 
+[131]   train-logloss:0.000106  validation-logloss:0.000309 
+[132]   train-logloss:0.000103  validation-logloss:0.000310 
+[133]   train-logloss:0.000101  validation-logloss:0.000308 
+[134]   train-logloss:0.000098  validation-logloss:0.000305 
+[135]   train-logloss:0.000095  validation-logloss:0.000305 
+[136]   train-logloss:0.000093  validation-logloss:0.000303 
+[137]   train-logloss:0.000091  validation-logloss:0.000300 
+[138]   train-logloss:0.000088  validation-logloss:0.000300 
+[139]   train-logloss:0.000086  validation-logloss:0.000300 
+[140]   train-logloss:0.000084  validation-logloss:0.000301 
+[141]   train-logloss:0.000082  validation-logloss:0.000298 
+[142]   train-logloss:0.000080  validation-logloss:0.000297 
+[143]   train-logloss:0.000078  validation-logloss:0.000297 
+[144]   train-logloss:0.000076  validation-logloss:0.000296 
+[145]   train-logloss:0.000074  validation-logloss:0.000297 
+[146]   train-logloss:0.000068  validation-logloss:0.000289 
+[147]   train-logloss:0.000067  validation-logloss:0.000285 
+[148]   train-logloss:0.000065  validation-logloss:0.000285 
+[149]   train-logloss:0.000063  validation-logloss:0.000285 
+[150]   train-logloss:0.000062  validation-logloss:0.000284 
+[151]   train-logloss:0.000061  validation-logloss:0.000283 
+[152]   train-logloss:0.000060  validation-logloss:0.000283 
+[153]   train-logloss:0.000058  validation-logloss:0.000281 
+[154]   train-logloss:0.000057  validation-logloss:0.000283 
+[155]   train-logloss:0.000053  validation-logloss:0.000277 
+[156]   train-logloss:0.000052  validation-logloss:0.000278 
+[157]   train-logloss:0.000051  validation-logloss:0.000273 
+[158]   train-logloss:0.000050  validation-logloss:0.000275 
+[159]   train-logloss:0.000049  validation-logloss:0.000271 
+[160]   train-logloss:0.000048  validation-logloss:0.000272 
+[161]   train-logloss:0.000047  validation-logloss:0.000274 
+[162]   train-logloss:0.000046  validation-logloss:0.000272 
+[163]   train-logloss:0.000045  validation-logloss:0.000272 
+[164]   train-logloss:0.000044  validation-logloss:0.000273 
+[165]   train-logloss:0.000043  validation-logloss:0.000272 
+[166]   train-logloss:0.000042  validation-logloss:0.000275 
+[167]   train-logloss:0.000042  validation-logloss:0.000274 
+[168]   train-logloss:0.000041  validation-logloss:0.000273 
+[169]   train-logloss:0.000040  validation-logloss:0.000274 
+[170]   train-logloss:0.000039  validation-logloss:0.000275 
+[171]   train-logloss:0.000039  validation-logloss:0.000273 
+[172]   train-logloss:0.000038  validation-logloss:0.000275 
+[173]   train-logloss:0.000038  validation-logloss:0.000275 
+[174]   train-logloss:0.000035  validation-logloss:0.000273 
+[175]   train-logloss:0.000035  validation-logloss:0.000274 
+[176]   train-logloss:0.000034  validation-logloss:0.000274 
+[177]   train-logloss:0.000033  validation-logloss:0.000272 
+[178]   train-logloss:0.000033  validation-logloss:0.000274 
+[179]   train-logloss:0.000031  validation-logloss:0.000272 
+[180]   train-logloss:0.000031  validation-logloss:0.000273 
+[181]   train-logloss:0.000030  validation-logloss:0.000271 
+[182]   train-logloss:0.000030  validation-logloss:0.000273 
+[183]   train-logloss:0.000028  validation-logloss:0.000272 
+[184]   train-logloss:0.000028  validation-logloss:0.000271 
+[185]   train-logloss:0.000028  validation-logloss:0.000270 
+[186]   train-logloss:0.000027  validation-logloss:0.000271 
+[187]   train-logloss:0.000027  validation-logloss:0.000272 
+[188]   train-logloss:0.000026  validation-logloss:0.000271 
+[189]   train-logloss:0.000026  validation-logloss:0.000272 
+[190]   train-logloss:0.000025  validation-logloss:0.000271 
+[191]   train-logloss:0.000025  validation-logloss:0.000270 
+[192]   train-logloss:0.000025  validation-logloss:0.000270 
+[193]   train-logloss:0.000024  validation-logloss:0.000269 
+[194]   train-logloss:0.000024  validation-logloss:0.000270 
+[195]   train-logloss:0.000024  validation-logloss:0.000270 
+[196]   train-logloss:0.000023  validation-logloss:0.000267 
+[197]   train-logloss:0.000022  validation-logloss:0.000267 
+[198]   train-logloss:0.000022  validation-logloss:0.000268 
+[199]   train-logloss:0.000021  validation-logloss:0.000266 
+[200]   train-logloss:0.000021  validation-logloss:0.000267 
+[201]   train-logloss:0.000021  validation-logloss:0.000265 
+[202]   train-logloss:0.000020  validation-logloss:0.000266 
+[203]   train-logloss:0.000020  validation-logloss:0.000266 
+[204]   train-logloss:0.000020  validation-logloss:0.000264 
+[205]   train-logloss:0.000019  validation-logloss:0.000265 
+[206]   train-logloss:0.000019  validation-logloss:0.000263 
+[207]   train-logloss:0.000019  validation-logloss:0.000264 
+[208]   train-logloss:0.000019  validation-logloss:0.000264 
+[209]   train-logloss:0.000018  validation-logloss:0.000264 
+[210]   train-logloss:0.000018  validation-logloss:0.000265 
+[211]   train-logloss:0.000018  validation-logloss:0.000264 
+[212]   train-logloss:0.000018  validation-logloss:0.000265 
+[213]   train-logloss:0.000017  validation-logloss:0.000265 
+[214]   train-logloss:0.000017  validation-logloss:0.000263 
+[215]   train-logloss:0.000017  validation-logloss:0.000263 
+[216]   train-logloss:0.000017  validation-logloss:0.000262 
+[217]   train-logloss:0.000016  validation-logloss:0.000263 
+[218]   train-logloss:0.000016  validation-logloss:0.000263 
+[219]   train-logloss:0.000016  validation-logloss:0.000265 
+[220]   train-logloss:0.000016  validation-logloss:0.000264 
+[221]   train-logloss:0.000016  validation-logloss:0.000265 
+[222]   train-logloss:0.000016  validation-logloss:0.000266 
+[223]   train-logloss:0.000015  validation-logloss:0.000265 
+[224]   train-logloss:0.000015  validation-logloss:0.000265 
+[225]   train-logloss:0.000015  validation-logloss:0.000266 
+[226]   train-logloss:0.000015  validation-logloss:0.000265 
+[227]   train-logloss:0.000015  validation-logloss:0.000266 
+[228]   train-logloss:0.000015  validation-logloss:0.000266 
+[229]   train-logloss:0.000015  validation-logloss:0.000266 
+[230]   train-logloss:0.000014  validation-logloss:0.000266 
+[231]   train-logloss:0.000014  validation-logloss:0.000267 
+[232]   train-logloss:0.000014  validation-logloss:0.000267 
+[233]   train-logloss:0.000014  validation-logloss:0.000266 
+[234]   train-logloss:0.000014  validation-logloss:0.000267 
+[235]   train-logloss:0.000013  validation-logloss:0.000266 
+[236]   train-logloss:0.000013  validation-logloss:0.000266 
+[237]   train-logloss:0.000013  validation-logloss:0.000266 
+[238]   train-logloss:0.000013  validation-logloss:0.000267 
+[239]   train-logloss:0.000013  validation-logloss:0.000268 
+[240]   train-logloss:0.000013  validation-logloss:0.000267 
+[241]   train-logloss:0.000013  validation-logloss:0.000268 
+[242]   train-logloss:0.000013  validation-logloss:0.000268 
+[243]   train-logloss:0.000012  validation-logloss:0.000268 
+[244]   train-logloss:0.000012  validation-logloss:0.000267 
+[245]   train-logloss:0.000012  validation-logloss:0.000268 
+[246]   train-logloss:0.000012  validation-logloss:0.000269 
+[247]   train-logloss:0.000012  validation-logloss:0.000268 
+[248]   train-logloss:0.000012  validation-logloss:0.000269 
+[249]   train-logloss:0.000012  validation-logloss:0.000270 
+[250]   train-logloss:0.000012  validation-logloss:0.000269 
+[251]   train-logloss:0.000012  validation-logloss:0.000270 
+[252]   train-logloss:0.000012  validation-logloss:0.000271 
+[253]   train-logloss:0.000011  validation-logloss:0.000270 
+[254]   train-logloss:0.000011  validation-logloss:0.000271 
+[255]   train-logloss:0.000011  validation-logloss:0.000270 
+[256]   train-logloss:0.000011  validation-logloss:0.000271 
+[257]   train-logloss:0.000011  validation-logloss:0.000271 
+[258]   train-logloss:0.000011  validation-logloss:0.000271 
+[259]   train-logloss:0.000011  validation-logloss:0.000271 
+[260]   train-logloss:0.000011  validation-logloss:0.000271 
+[261]   train-logloss:0.000011  validation-logloss:0.000270 
+[262]   train-logloss:0.000011  validation-logloss:0.000271 
+[263]   train-logloss:0.000011  validation-logloss:0.000272 
+[264]   train-logloss:0.000011  validation-logloss:0.000272 
+[265]   train-logloss:0.000011  validation-logloss:0.000272 
+[266]   train-logloss:0.000010  validation-logloss:0.000272 
+Stopping. Best iteration:
+[216]   train-logloss:0.000017  validation-logloss:0.000262</code></pre>
 </div>
 </div>
 </section>
-<section id="including-plots" class="level2">
-<h2 class="anchored" data-anchor-id="including-plots">Including Plots</h2>
-<p>You can also embed plots, for example:</p>
+</section>
+<section id="results-and-analysis" class="level2">
+<h2 class="anchored" data-anchor-id="results-and-analysis">Results and Analysis</h2>
+<p>Our model stops boosting at 261th round, which means the model accuracy decreases in the next 50 rounds. So we know that overfitting occurs after that. Hence, we changed parameter nrounds to 261 to train our final model.</p>
+<p>Similar to the random forest, we can visualize the variable importance in XGBoost.</p>
 <div class="cell">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Define final model</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="co"># The argument verbose = 0 tells R not to display the training and testing error for each round.</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>final <span class="ot">&lt;-</span>  <span class="fu">xgboost</span>(<span class="at">params =</span> params, <span class="at">data =</span> xgb.train, <span class="at">max.depth =</span> <span class="dv">3</span>, <span class="at">nrounds =</span> <span class="dv">261</span>, <span class="at">verbose =</span> <span class="dv">0</span>)</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a><span class="do">### Feature Importance</span></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a><span class="co"># WRITE-UP refer to: https://cran.r-project.org/web/packages/xgboost/vignettes/discoverYourData.html</span></span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>importance <span class="ot">&lt;-</span> <span class="fu">xgb.importance</span>(<span class="at">feature_names =</span> <span class="fu">colnames</span>(train.x), <span class="at">model =</span> final)</span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(importance)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                          Feature       Gain      Cover Frequency
+1: ratio_to_median_purchase_price 0.40318241 0.30090156 0.1915029
+2:                   online_order 0.21435050 0.07013494 0.1388713
+3:             distance_from_home 0.17240824 0.29171508 0.2809131
+4:                used_pin_number 0.08302086 0.04859126 0.1236525
+5: distance_from_last_transaction 0.07067806 0.24579428 0.1553583
+6:                      used_chip 0.05635992 0.04286288 0.1097020</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># plot</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 3 most important features</span></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a><span class="fu">xgb.plot.importance</span>(<span class="at">importance_matrix =</span> importance, <span class="at">top_n =</span> <span class="dv">5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
-<p><img src="vignette_files/figure-html/pressure-1.png" class="img-fluid" width="672"></p>
+<p><img src="vignette_files/figure-html/unnamed-chunk-9-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
-<p>Note that the <code>echo = FALSE</code> parameter was added to the code chunk to prevent printing of the R code that generated the plot.</p>
+<section id="prediction-and-accuracy-measure" class="level3">
+<h3 class="anchored" data-anchor-id="prediction-and-accuracy-measure">Prediction and Accuracy Measure</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Use model to make predictions on test data</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>pred.y <span class="ot">&lt;-</span> <span class="fu">predict</span>(final, test.x)</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Label test data according to the predicted probability</span></span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>pred.label <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(pred.y <span class="sc">&gt;</span> <span class="fl">0.5</span>, <span class="dv">1</span>, <span class="dv">0</span>)</span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Confusion Matrix</span></span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>confusion.matrix <span class="ot">&lt;-</span> <span class="fu">table</span>(<span class="at">Predicted =</span> pred.label, <span class="at">Actual =</span> test.y)</span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(confusion.matrix)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>         Actual
+Predicted      0      1
+        0 182832      4
+        1      0  17164</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="co"># AUC-ROC</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>roc <span class="ot">&lt;-</span> <span class="fu">roc</span>(test.y, pred.label)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Setting levels: control = 0, case = 1</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Setting direction: controls &lt; cases</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>auc <span class="ot">&lt;-</span> <span class="fu">auc</span>(roc)</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(auc)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Area under the curve: 0.9999</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualization</span></span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ggroc</span>(roc) <span class="sc">+</span></span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"ROC Curve"</span>, <span class="at">x =</span> <span class="st">"False Positive Rate"</span>, <span class="at">y =</span> <span class="st">"True Positive Rate"</span>) <span class="sc">+</span> </span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">annotate</span>(<span class="st">"text"</span>, <span class="at">x =</span> <span class="fl">0.2</span>, <span class="at">y =</span> <span class="fl">0.8</span>, <span class="at">label =</span> <span class="fu">paste</span>(<span class="st">"AUC ="</span>, <span class="fu">round</span>(auc, <span class="dv">5</span>)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="vignette_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>The plot on the right shows a very high AUC score of 0.99988, indicating that the model is almost a perfect classifier. Such an unusual result is probably because the simulated dataset is designed for practice purposes, and the data is so unbalanced.</p>
+</section>
 </section>
 
 </main>

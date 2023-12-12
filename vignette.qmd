@@ -23,9 +23,9 @@ XGBoost, an acronym for eXtreme Gradient Boosting, was crafted by Dr. Tianqi Che
 
 ## Dataset Introduction
 
-Our vignette is conducted on a simulated "Credit Card Fraud" dataset obtained on Kaggle (https://www.kaggle.com/datasets/dhanushnarayananr/credit-card-fraud/data). This dataset presents a binary classification problem with transactions labeled as either fraudulent or legitimate. With 8 variables and a total of 1,000,000 observations, only 8.74% (87,403) are marked as fraudulent, highlighting a significant class imbalance.
+Our vignette is conducted on a simulated "Credit Card Fraud" dataset obtained on Kaggle (https://www.kaggle.com/datasets/dhanushnarayananr/credit-card-fraud/data). This dataset presents a binary classification problem, classifying transactions as either fraudulent or legitimate. With 8 variables and a total of 1,000,000 observations, only 8.74% (87,403) are marked as fraudulent, highlighting a significant class imbalance.
 
-```{r pressure, echo=FALSE}
+```{r, echo=FALSE}
 head(data)
 
 ```
@@ -52,7 +52,7 @@ The variable explanations are as follows:
 
 This dataset contains no missing value, therefore there is no imputation needed.
 
-```{r pressure, echo=FALSE}
+```{r, echo=FALSE}
 par(mfrow = c(3, 3))
 
 for (col in colnames(data)) {
@@ -63,7 +63,7 @@ for (col in colnames(data)) {
 
 We can observe from the density curve graph of each variable that except for the first three, the other 5 variables including our response variable 'fraud' are binary. But the first three variables are greatly skewed.
 
-```{r pressure, echo=FALSE}
+```{r, echo=FALSE}
 par(mfrow = c(1, 1))
 # Correlation
 data %>%
@@ -74,7 +74,7 @@ data %>%
 
 From the correlation plot, the numerical variable 'ratio_to_median' has a positive correlation with respect to 'fraud', and then are 'distance_from_home' and 'online_order'. Other than that, 'used_pin_number' has negatively correlated with 'fraud'.
 
-```{r pressure, echo=FALSE}
+```{r, echo=FALSE}
 data %>%
   ggplot(aes(x = fraud)) +
   geom_bar() +
@@ -88,6 +88,7 @@ This graph represents the distribution of 'fraud'. Around 91% of the transaction
 
 ## Data Preprocessing
 
+In preparation for modeling, the dataset undergoes initial processing steps. Outliers are systematically trimmed, and selected variables are renamed for clarity and conciseness. Subsequently, the mutate function is employed to enact transformations, notably generating scaled representations for the columns 'dist_home,' 'dist_last_transact,' and 'ratio_to_med_price.'
 
 ## Introduction to Boosted Trees and XGBoost
 
