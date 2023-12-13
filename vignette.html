@@ -110,7 +110,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 </header>
 
-<p><em>Objectives</em></p>
+<section id="objectives" class="level4">
+<h4 class="anchored" data-anchor-id="objectives">Objectives</h4>
 <p>In this vignette, you’ll be guided through a comprehensive journey from Exploratory Data Analysis(EDA) to employing XGBoost, a cutting-edge and industry-standard model. You’ll acquire skills in:</p>
 <ul>
 <li><p>Utilizing functions from the <strong>ggplot</strong> and <strong>corrplot</strong> packages for EDA and data visualization. These tools are essential for understanding the underlying patterns and relationships in your data.</p></li>
@@ -118,7 +119,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><p>Leveraging functions from the <strong>pROC</strong> package to evaluate the performance of your model. This is crucial for assessing the effectiveness of your predictive model in real-world scenarios.</p></li>
 </ul>
 <p>By the end of this vignette, you will have a solid understanding of how to effectively use these tools in a cohesive workflow to build and assess a robust machine learning model.</p>
-<p><em>Prerequisites</em></p>
+</section>
+<section id="prerequisites" class="level4">
+<h4 class="anchored" data-anchor-id="prerequisites">Prerequisites</h4>
 <p>First, please follow the action item below to get set up for the vignette. You may need to install one or more packages if the library() calls return an error.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># load packages</span></span>
@@ -131,59 +134,202 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="co"># read data</span></span>
 <span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"data/card_transdata.csv"</span>) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+</section>
 <section id="abstract" class="level2">
 <h2 class="anchored" data-anchor-id="abstract">Abstract</h2>
 <p>XGBoost, an acronym for eXtreme Gradient Boosting, was crafted by Dr.&nbsp;Tianqi Chen in 2016 as a gradient-boosting algorithm. Demonstrating remarkable success, it has emerged as a formidable player in various data science competitions. Renowned for its exceptional performance, XGBoost stands out as a robust solution for tasks such as handling structured data, text classification, regression, and notably, exhibiting superior capabilities on large-scale datasets. Our vignette presents a comprehensive exploration of XGBoost, including its mathematical principles, programming language support, and practical application in classification problems.</p>
 </section>
 <section id="dataset-introduction" class="level2">
 <h2 class="anchored" data-anchor-id="dataset-introduction">Dataset Introduction</h2>
-<p>Our vignette is conducted on a simulated “Credit Card Fraud” dataset obtained on Kaggle (https://www.kaggle.com/datasets/dhanushnarayananr/credit-card-fraud/data). This dataset presents a binary classification problem, classifying transactions as either fraudulent or legitimate. With 8 variables and a total of 1,000,000 observations, only 8.74% (87,403) are marked as fraudulent, highlighting a significant class imbalance.</p>
+<p>Our vignette is conducted on a simulated <a href="https://www.kaggle.com/datasets/dhanushnarayananr/credit-card-fraud/data">“Credit Card Fraud”</a> dataset obtained on Kaggle. This dataset presents a binary classification problem, classifying transactions as either fraudulent or legitimate. With 8 variables and a total of 1,000,000 observations, only 8.74% (87,403) are marked as fraudulent, highlighting a significant class imbalance.</p>
 <div class="cell">
-<div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 6 × 8
-  distance_from_home distance_from_last_transaction ratio_to_median_purchase_p…¹
-               &lt;dbl&gt;                          &lt;dbl&gt;                        &lt;dbl&gt;
-1              57.9                           0.311                       1.95  
-2              10.8                           0.176                       1.29  
-3               5.09                          0.805                       0.428 
-4               2.25                          5.60                        0.363 
-5              44.2                           0.566                       2.22  
-6               5.59                         13.3                         0.0648
-# ℹ abbreviated name: ¹​ratio_to_median_purchase_price
-# ℹ 5 more variables: repeat_retailer &lt;dbl&gt;, used_chip &lt;dbl&gt;,
-#   used_pin_number &lt;dbl&gt;, online_order &lt;dbl&gt;, fraud &lt;dbl&gt;</code></pre>
+<div class="cell-output-display">
+<table class="table table-sm table-striped small">
+<colgroup>
+<col style="width: 13%">
+<col style="width: 21%">
+<col style="width: 21%">
+<col style="width: 11%">
+<col style="width: 7%">
+<col style="width: 11%">
+<col style="width: 9%">
+<col style="width: 4%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: right;">distance_from_home</th>
+<th style="text-align: right;">distance_from_last_transaction</th>
+<th style="text-align: right;">ratio_to_median_purchase_price</th>
+<th style="text-align: right;">repeat_retailer</th>
+<th style="text-align: right;">used_chip</th>
+<th style="text-align: right;">used_pin_number</th>
+<th style="text-align: right;">online_order</th>
+<th style="text-align: right;">fraud</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">57.877857</td>
+<td style="text-align: right;">0.3111400</td>
+<td style="text-align: right;">1.9459400</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">10.829943</td>
+<td style="text-align: right;">0.1755915</td>
+<td style="text-align: right;">1.2942188</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">5.091080</td>
+<td style="text-align: right;">0.8051526</td>
+<td style="text-align: right;">0.4277146</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">2.247564</td>
+<td style="text-align: right;">5.6000435</td>
+<td style="text-align: right;">0.3626626</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">44.190936</td>
+<td style="text-align: right;">0.5664863</td>
+<td style="text-align: right;">2.2227673</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">5.586408</td>
+<td style="text-align: right;">13.2610733</td>
+<td style="text-align: right;">0.0647685</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+</tr>
+</tbody>
+</table>
 </div>
 </div>
 <p>The variable explanations are as follows:</p>
-<ul>
-<li><p>distance_from_home: the distance from home where the transaction happened</p></li>
-<li><p>distance_from_last_transact: the distance from last transaction happened</p></li>
-<li><p>ratio_to_median_price: ratio of transaction price to median purchase price</p></li>
-<li><p>repeat_retailer: Is the transaction happened from same retailer</p></li>
-<li><p>used_chip: Is the transaction through credit card?</p></li>
-<li><p>used_pin_number - Is the transaction happened by using PIN number?</p></li>
-<li><p>online_order - Is the transaction an online order?</p></li>
-<li><p>fraud - Is the transaction fraudulent.</p></li>
-</ul>
+<table class="table">
+<colgroup>
+<col style="width: 39%">
+<col style="width: 42%">
+<col style="width: 18%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: center;">Variable Name</th>
+<th style="text-align: center;">Feature Explanation</th>
+<th style="text-align: center;">Type</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;">distance_from_home</td>
+<td style="text-align: center;">The distance from home where the transaction happened</td>
+<td style="text-align: center;">Continuous</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">distance_from_last_transaction</td>
+<td style="text-align: center;">The distance from last transaction happened</td>
+<td style="text-align: center;">Continuous</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">ratio_to_median_purchase_price</td>
+<td style="text-align: center;">Ratio of purchased price transaction to median purchase price</td>
+<td style="text-align: center;">Continuous</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">repeat_retailer</td>
+<td style="text-align: center;">Is the transaction happened from same retailer</td>
+<td style="text-align: center;">Discrete</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">used_chip</td>
+<td style="text-align: center;">Is the transaction through credit card chip</td>
+<td style="text-align: center;">Discrete</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">used_pin_number</td>
+<td style="text-align: center;">Is the transaction happened by using PIN number</td>
+<td style="text-align: center;">Discrete</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">online_order</td>
+<td style="text-align: center;">Is the transaction an online order</td>
+<td style="text-align: center;">Discrete</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">fraud</td>
+<td style="text-align: center;">Is the transaction fraudulent</td>
+<td style="text-align: center;">Discrete</td>
+</tr>
+</tbody>
+</table>
 </section>
 <section id="exploratory-data-analysis" class="level2">
 <h2 class="anchored" data-anchor-id="exploratory-data-analysis">Exploratory Data Analysis</h2>
-<p>This dataset contains no missing value, therefore there is no imputation needed.</p>
+<p>First, we want to check if there is missing values in the dataset</p>
 <div class="cell">
-<div class="cell-output-display">
-<p><img src="vignette_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid" width="672"></p>
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>data <span class="sc">%&gt;%</span> <span class="fu">is.na</span>() <span class="sc">%&gt;%</span> <span class="fu">sum</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0</code></pre>
 </div>
 </div>
-<p>We can observe from the density curve graph of each variable that except for the first three, the other 5 variables including our response variable ‘fraud’ are binary. But the first three variables are greatly skewed.</p>
+<p>Through the code above, we know that this dataset contains no missing value, therefore there is no imputation needed. Then, we can use the following chunk to check the distribution of the variables.</p>
 <div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">3</span>, <span class="dv">3</span>))</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (col <span class="cf">in</span> <span class="fu">colnames</span>(data)) {</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  density_values <span class="ot">&lt;-</span> <span class="fu">density</span>(data[[col]])</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">plot</span>(density_values, <span class="at">main =</span> col, <span class="at">col =</span> <span class="st">"skyblue"</span>, <span class="at">lwd =</span> <span class="dv">2</span>)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <p><img src="vignette_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
-<p>From the correlation plot, the numerical variable ‘ratio_to_median’ has a positive correlation with respect to ‘fraud’, and then are ‘distance_from_home’ and ‘online_order’. Other than that, ‘used_pin_number’ has negatively correlated with ‘fraud’.</p>
+<p>We can observe from the density curve graph of each variable that except for the first three, the other 5 variables including our response variable ‘fraud’ are binary. But the first three variables are greatly skewed. After that, we want to see if correlation exists between the variables.</p>
 <div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">par</span>(<span class="at">mfrow =</span> <span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>))</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Correlation</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>data <span class="sc">%&gt;%</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cor</span>(<span class="at">use =</span> <span class="st">'everything'</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">corrplot</span>(<span class="at">type =</span> <span class="st">'lower'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <p><img src="vignette_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>From the correlation plot, the numerical variable ‘ratio_to_median’ has a positive correlation with respect to ‘fraud’, and then are ‘distance_from_home’ and ‘online_order’. Other than that, ‘used_pin_number’ has negatively correlated with ‘fraud’. Lastly, we want to specifically analyze the distribution of the response variable, which is our most interested variable.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>data <span class="sc">%&gt;%</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> fraud)) <span class="sc">+</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_bar</span>() <span class="sc">+</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Fraud Distribution"</span>, <span class="at">x =</span> <span class="st">'fraud'</span>, <span class="at">y =</span> <span class="st">'count'</span>) <span class="sc">+</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">hjust =</span> <span class="fl">0.5</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="vignette_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
 <p>This graph represents the distribution of ‘fraud’. Around 91% of the transactions are not fraud and 9% are fraud, which reflects a imbalance in the data. This imbalance suggests adapting performance metrics like AUC-ROC, f1 score as evaluation metrics instead of “accurary” to assess the ML model.</p>
@@ -192,18 +338,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 class="anchored" data-anchor-id="data-preprocessing">Data Preprocessing</h2>
 <p>In preparation for modeling, the dataset undergoes initial processing steps. Outliers are systematically trimmed, and selected variables are renamed for clarity and conciseness. Subsequently, the mutate function is employed to enact transformations, notably generating scaled representations for the columns ‘dist_home,’ ‘dist_last_transact,’ and ‘ratio_to_med_price.’</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>trim <span class="ot">&lt;-</span> <span class="cf">function</span>(x, .at){</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  x[<span class="fu">abs</span>(x) <span class="sc">&gt;</span> .at] <span class="ot">&lt;-</span> <span class="fu">sign</span>(x[<span class="fu">abs</span>(x) <span class="sc">&gt;</span> .at])<span class="sc">*</span>.at</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(x)</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="co"># rename and scale: since some variable are on distance scale/some are ratio</span></span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> data <span class="sc">%&gt;%</span></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">dist_home =</span> distance_from_home,</span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>         <span class="at">dist_last_transact =</span> distance_from_last_transaction,</span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>         <span class="at">ratio_to_med_price =</span> ratio_to_median_purchase_price) <span class="sc">%&gt;%</span></span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="at">.cols =</span> <span class="fu">c</span>(dist_home, dist_last_transact, ratio_to_med_price), </span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>                <span class="sc">~</span> <span class="fu">trim</span>(<span class="fu">scale</span>((.x))[, <span class="dv">1</span>], <span class="at">.at =</span> <span class="dv">3</span>)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>trim <span class="ot">&lt;-</span> <span class="cf">function</span>(x, .at){</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  x[<span class="fu">abs</span>(x) <span class="sc">&gt;</span> .at] <span class="ot">&lt;-</span> <span class="fu">sign</span>(x[<span class="fu">abs</span>(x) <span class="sc">&gt;</span> .at])<span class="sc">*</span>.at</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(x)</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="co"># rename and scale: since some variable are on distance scale/some are ratio</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> data <span class="sc">%&gt;%</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">dist_home =</span> distance_from_home,</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>         <span class="at">dist_last_transact =</span> distance_from_last_transaction,</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>         <span class="at">ratio_to_med_price =</span> ratio_to_median_purchase_price) <span class="sc">%&gt;%</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="at">.cols =</span> <span class="fu">c</span>(dist_home, dist_last_transact, ratio_to_med_price), </span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>                <span class="sc">~</span> <span class="fu">trim</span>(<span class="fu">scale</span>((.x))[, <span class="dv">1</span>], <span class="at">.at =</span> <span class="dv">3</span>)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="introduction-to-boosted-trees-and-xgboost" class="level2">
@@ -294,28 +440,28 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="data-preparation" class="level3">
 <h3 class="anchored" data-anchor-id="data-preparation">Data Preparation</h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">#set seed for reproducibility</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">197</span>)</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co">#split training/validation/testing</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>data.split <span class="ot">&lt;-</span> data <span class="sc">%&gt;%</span> </span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">initial_split</span>(<span class="at">prop =</span> <span class="fl">0.6</span>, <span class="at">strata =</span> fraud)</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>test.split <span class="ot">&lt;-</span> <span class="fu">initial_split</span>(<span class="fu">testing</span>(data.split), <span class="at">prop =</span> <span class="fl">0.5</span>, <span class="at">strata =</span> fraud)</span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>data.val <span class="ot">&lt;-</span> <span class="fu">training</span>(test.split)</span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>data.test <span class="ot">&lt;-</span> <span class="fu">testing</span>(test.split)</span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="co">#define predictor and response variables in training set</span></span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="co"># </span><span class="al">NOTE</span><span class="co">: XGBoost only use matrix data</span></span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>train.x <span class="ot">&lt;-</span>  <span class="fu">data.matrix</span>(<span class="fu">training</span>(data.split) <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="sc">-</span>fraud))</span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>train.y <span class="ot">&lt;-</span>  <span class="fu">training</span>(data.split) <span class="sc">%&gt;%</span> <span class="fu">pull</span>(fraud)</span>
-<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="co">#define predictor and response variables in validation set</span></span>
-<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>val.x <span class="ot">&lt;-</span>  <span class="fu">data.matrix</span>(data.val <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="sc">-</span>fraud))</span>
-<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>val.y <span class="ot">&lt;-</span>  data.val <span class="sc">%&gt;%</span> <span class="fu">pull</span>(fraud)</span>
-<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="co">#define predictor and response variables in testing set</span></span>
-<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>test.x <span class="ot">&lt;-</span>  <span class="fu">data.matrix</span>(data.test <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="sc">-</span>fraud))</span>
-<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>test.y <span class="ot">&lt;-</span>  data.test <span class="sc">%&gt;%</span> <span class="fu">pull</span>(fraud)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co">#set seed for reproducibility</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">197</span>)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="co">#split training/validation/testing</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>data.split <span class="ot">&lt;-</span> data <span class="sc">%&gt;%</span> </span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">initial_split</span>(<span class="at">prop =</span> <span class="fl">0.6</span>, <span class="at">strata =</span> fraud)</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>test.split <span class="ot">&lt;-</span> <span class="fu">initial_split</span>(<span class="fu">testing</span>(data.split), <span class="at">prop =</span> <span class="fl">0.5</span>, <span class="at">strata =</span> fraud)</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>data.val <span class="ot">&lt;-</span> <span class="fu">training</span>(test.split)</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>data.test <span class="ot">&lt;-</span> <span class="fu">testing</span>(test.split)</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="co">#define predictor and response variables in training set</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="co"># </span><span class="al">NOTE</span><span class="co">: XGBoost only use matrix data</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>train.x <span class="ot">&lt;-</span>  <span class="fu">data.matrix</span>(<span class="fu">training</span>(data.split) <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="sc">-</span>fraud))</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>train.y <span class="ot">&lt;-</span>  <span class="fu">training</span>(data.split) <span class="sc">%&gt;%</span> <span class="fu">pull</span>(fraud)</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a><span class="co">#define predictor and response variables in validation set</span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>val.x <span class="ot">&lt;-</span>  <span class="fu">data.matrix</span>(data.val <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="sc">-</span>fraud))</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>val.y <span class="ot">&lt;-</span>  data.val <span class="sc">%&gt;%</span> <span class="fu">pull</span>(fraud)</span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a><span class="co">#define predictor and response variables in testing set</span></span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>test.x <span class="ot">&lt;-</span>  <span class="fu">data.matrix</span>(data.test <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="sc">-</span>fraud))</span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>test.y <span class="ot">&lt;-</span>  data.test <span class="sc">%&gt;%</span> <span class="fu">pull</span>(fraud)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="model-fitting" class="level3">
@@ -330,27 +476,27 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><p>early_stopping_rounds: Stop the training process if the model’s accuracy on validation set hasn’t improved for the specified number of rounds</p></li>
 </ul>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co">#define xgb.DMatirx: This is a specialized data structure that xgboost uses for efficiency</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>xgb.train <span class="ot">&lt;-</span>  <span class="fu">xgb.DMatrix</span>(<span class="at">data =</span> train.x, <span class="at">label =</span> train.y)</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>xgb.val <span class="ot">&lt;-</span>  <span class="fu">xgb.DMatrix</span>(<span class="at">data =</span> val.x, <span class="at">label =</span> val.y)</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>xgb.test <span class="ot">&lt;-</span>  <span class="fu">xgb.DMatrix</span>(<span class="at">data =</span> test.x, <span class="at">label =</span> test.y)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co">#define xgb.DMatirx: This is a specialized data structure that xgboost uses for efficiency</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>xgb.train <span class="ot">&lt;-</span>  <span class="fu">xgb.DMatrix</span>(<span class="at">data =</span> train.x, <span class="at">label =</span> train.y)</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>xgb.val <span class="ot">&lt;-</span>  <span class="fu">xgb.DMatrix</span>(<span class="at">data =</span> val.x, <span class="at">label =</span> val.y)</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>xgb.test <span class="ot">&lt;-</span>  <span class="fu">xgb.DMatrix</span>(<span class="at">data =</span> test.x, <span class="at">label =</span> test.y)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Here we use a watchlist and a validation set to select the optimal number of boosting rounds(nrounds). When training, we track the performance of the model on the training and validation datasets. Watchlist is usually used with the early_stopping_rounds parameter to determine when the model starts to overfit and we should stop.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>watchlist <span class="ot">=</span> <span class="fu">list</span>(<span class="at">train=</span>xgb.train, <span class="at">validation=</span>xgb.val)</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>params <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">objective =</span> <span class="st">"binary:logistic"</span>, <span class="co"># loss function for binary classification problem</span></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">eta =</span> <span class="fl">0.3</span> <span class="co"># learning rate</span></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="co">#fit XGBoost model and display training and testing data at each round</span></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>model <span class="ot">&lt;-</span>  <span class="fu">xgb.train</span>(<span class="at">params =</span> params, </span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>                    <span class="at">data =</span> xgb.train, <span class="co"># Training data</span></span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>                    <span class="at">max.depth =</span> <span class="dv">3</span>, <span class="co"># Size of each individual tree</span></span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>                    <span class="at">watchlist=</span>watchlist, <span class="co"># Track model performance on train and validation set</span></span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>                    <span class="at">nrounds =</span> <span class="dv">500</span>, <span class="co"># Number of boosting iterations</span></span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>                    <span class="at">early_stopping_rounds =</span> <span class="dv">50</span>) <span class="co"># Number of iterations we will wait for the next decrease</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>watchlist <span class="ot">=</span> <span class="fu">list</span>(<span class="at">train=</span>xgb.train, <span class="at">validation=</span>xgb.val)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>params <span class="ot">&lt;-</span> <span class="fu">list</span>(</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">objective =</span> <span class="st">"binary:logistic"</span>, <span class="co"># loss function for binary classification problem</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">eta =</span> <span class="fl">0.3</span> <span class="co"># learning rate</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="co">#fit XGBoost model and display training and testing data at each round</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>model <span class="ot">&lt;-</span>  <span class="fu">xgb.train</span>(<span class="at">params =</span> params, </span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>                    <span class="at">data =</span> xgb.train, <span class="co"># Training data</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>                    <span class="at">max.depth =</span> <span class="dv">3</span>, <span class="co"># Size of each individual tree</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>                    <span class="at">watchlist=</span>watchlist, <span class="co"># Track model performance on train and validation set</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>                    <span class="at">nrounds =</span> <span class="dv">500</span>, <span class="co"># Number of boosting iterations</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>                    <span class="at">early_stopping_rounds =</span> <span class="dv">50</span>) <span class="co"># Number of iterations we will wait for the next decrease</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] train-logloss:0.451127  validation-logloss:0.451234 
 Multiple eval metrics are present. Will use validation_logloss for early stopping.
@@ -632,14 +778,14 @@ Stopping. Best iteration:
 <p>Our model stops boosting at 261th round, which means the model accuracy decreases in the next 50 rounds. So we know that overfitting occurs after that. Hence, we changed parameter nrounds to 216 to train our final model.</p>
 <p>Similar to the random forest, we can visualize the variable importance in XGBoost.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Define final model</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="co"># The argument verbose = 0 tells R not to display the training and testing error for each round.</span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>final <span class="ot">&lt;-</span>  <span class="fu">xgboost</span>(<span class="at">params =</span> params, <span class="at">data =</span> xgb.train, <span class="at">max.depth =</span> <span class="dv">3</span>, <span class="at">nrounds =</span> <span class="dv">216</span>, <span class="at">verbose =</span> <span class="dv">0</span>)</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="do">### Feature Importance</span></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="co"># WRITE-UP refer to: https://cran.r-project.org/web/packages/xgboost/vignettes/discoverYourData.html</span></span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>importance <span class="ot">&lt;-</span> <span class="fu">xgb.importance</span>(<span class="at">feature_names =</span> <span class="fu">colnames</span>(train.x), <span class="at">model =</span> final)</span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(importance)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Define final model</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="co"># The argument verbose = 0 tells R not to display the training and testing error for each round.</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>final <span class="ot">&lt;-</span>  <span class="fu">xgboost</span>(<span class="at">params =</span> params, <span class="at">data =</span> xgb.train, <span class="at">max.depth =</span> <span class="dv">3</span>, <span class="at">nrounds =</span> <span class="dv">216</span>, <span class="at">verbose =</span> <span class="dv">0</span>)</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="do">### Feature Importance</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="co"># WRITE-UP refer to: https://cran.r-project.org/web/packages/xgboost/vignettes/discoverYourData.html</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>importance <span class="ot">&lt;-</span> <span class="fu">xgb.importance</span>(<span class="at">feature_names =</span> <span class="fu">colnames</span>(train.x), <span class="at">model =</span> final)</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(importance)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>              Feature       Gain      Cover Frequency
 1: ratio_to_med_price 0.40318707 0.30092814 0.1916726
@@ -649,50 +795,50 @@ Stopping. Best iteration:
 5: dist_last_transact 0.07067680 0.24581978 0.1557789
 6:          used_chip 0.05635886 0.04285406 0.1105528</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># plot</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 3 most important features</span></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="fu">xgb.plot.importance</span>(<span class="at">importance_matrix =</span> importance, <span class="at">top_n =</span> <span class="dv">5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># plot</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="co"># 3 most important features</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="fu">xgb.plot.importance</span>(<span class="at">importance_matrix =</span> importance, <span class="at">top_n =</span> <span class="dv">5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
-<p><img src="vignette_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid" width="672"></p>
+<p><img src="vignette_files/figure-html/unnamed-chunk-11-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
 <section id="prediction-and-accuracy-measure" class="level3">
 <h3 class="anchored" data-anchor-id="prediction-and-accuracy-measure">Prediction and Accuracy Measure</h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Use model to make predictions on test data</span></span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>pred.y <span class="ot">&lt;-</span> <span class="fu">predict</span>(final, test.x)</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Label test data according to the predicted probability</span></span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>pred.label <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(pred.y <span class="sc">&gt;</span> <span class="fl">0.5</span>, <span class="dv">1</span>, <span class="dv">0</span>)</span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Confusion Matrix</span></span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>confusion.matrix <span class="ot">&lt;-</span> <span class="fu">table</span>(<span class="at">Predicted =</span> pred.label, <span class="at">Actual =</span> test.y)</span>
-<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(confusion.matrix)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Use model to make predictions on test data</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>pred.y <span class="ot">&lt;-</span> <span class="fu">predict</span>(final, test.x)</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Label test data according to the predicted probability</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>pred.label <span class="ot">&lt;-</span> <span class="fu">ifelse</span>(pred.y <span class="sc">&gt;</span> <span class="fl">0.5</span>, <span class="dv">1</span>, <span class="dv">0</span>)</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Confusion Matrix</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>confusion.matrix <span class="ot">&lt;-</span> <span class="fu">table</span>(<span class="at">Predicted =</span> pred.label, <span class="at">Actual =</span> test.y)</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(confusion.matrix)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>         Actual
 Predicted      0      1
         0 182832      4
         1      0  17164</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># AUC-ROC</span></span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>roc <span class="ot">&lt;-</span> <span class="fu">roc</span>(test.y, pred.label)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># AUC-ROC</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>roc <span class="ot">&lt;-</span> <span class="fu">roc</span>(test.y, pred.label)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Setting levels: control = 0, case = 1</code></pre>
 </div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Setting direction: controls &lt; cases</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>auc <span class="ot">&lt;-</span> <span class="fu">auc</span>(roc)</span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(auc)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>auc <span class="ot">&lt;-</span> <span class="fu">auc</span>(roc)</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(auc)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Area under the curve: 0.9999</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualization</span></span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ggroc</span>(roc) <span class="sc">+</span></span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"ROC Curve"</span>, <span class="at">x =</span> <span class="st">"False Positive Rate"</span>, <span class="at">y =</span> <span class="st">"True Positive Rate"</span>) <span class="sc">+</span> </span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">annotate</span>(<span class="st">"text"</span>, <span class="at">x =</span> <span class="fl">0.2</span>, <span class="at">y =</span> <span class="fl">0.8</span>, <span class="at">label =</span> <span class="fu">paste</span>(<span class="st">"AUC ="</span>, <span class="fu">round</span>(auc, <span class="dv">5</span>)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Visualization</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ggroc</span>(roc) <span class="sc">+</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"ROC Curve"</span>, <span class="at">x =</span> <span class="st">"False Positive Rate"</span>, <span class="at">y =</span> <span class="st">"True Positive Rate"</span>) <span class="sc">+</span> </span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">annotate</span>(<span class="st">"text"</span>, <span class="at">x =</span> <span class="fl">0.2</span>, <span class="at">y =</span> <span class="fl">0.8</span>, <span class="at">label =</span> <span class="fu">paste</span>(<span class="st">"AUC ="</span>, <span class="fu">round</span>(auc, <span class="dv">5</span>)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
-<p><img src="vignette_files/figure-html/unnamed-chunk-11-1.png" class="img-fluid" width="672"></p>
+<p><img src="vignette_files/figure-html/unnamed-chunk-12-1.png" class="img-fluid" width="672"></p>
 </div>
 </div>
 <p>The plot on the right shows a very high AUC score of 0.99988, indicating that the model is almost a perfect classifier. Such an unusual result is probably because the simulated dataset is designed for practice purposes, and the data is so unbalanced.</p>
