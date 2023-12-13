@@ -14,21 +14,21 @@ root directory
    ├── processed
 ├── scripts
    ├── drafts
-   ├── kaggle.json
    ├── vignette-script.R
 ├── img
 ├── vignette.qmd
 ├── vignette.html
 ├── README.md 
 ├── vignette-xgboost.Rproj
-└── .gitignore
 ```
 
 Reference list: 
 
+- Chen, Tianqi, and Carlos Guestrin. "Xgboost: A scalable tree boosting system." Proceedings of the 22nd acm sigkdd international conference on knowledge discovery and data mining. 2016.
+
 - He, Shen, et al. “An Effective Cost-Sensitive XGBoost Method for Malicious Urls Detection in Imbalanced Dataset.” IEEE Access, vol. 9, 2021, pp. 93089–93096, doi:10.1109/access.2021.3093094. 
 
-- ULB, Machine Learning Group -. “Credit Card Fraud Detection.” Kaggle, 23 Mar. 2018, www.kaggle.com/datasets/mlg-ulb/creditcardfraud. Accessed 06 Dec. 2023. 
+- Narayanan R, Dhanush. “Credit Card Fraud”, https://www.kaggle.com/datasets/dhanushnarayananr/credit-card-fraud/data. Accessed 06 Dec. 2023. 
 
 - “XGBoost Documentation.” XGBoost Documentation - Xgboost 2.0.2 Documentation, xgboost.readthedocs.io/. 
 
