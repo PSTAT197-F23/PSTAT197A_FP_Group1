@@ -196,30 +196,56 @@ final <-  best_model
 importance <- xgb.importance(feature_names = colnames(train.x), model = final)
 head(importance)
 
-# plot
-# 3 most important features
+## Visulization and Confusion Metric Part after applied k-fold and grid search
+## Average Feature Importances
+# Feature importance from the best model
+importance <- xgb.importance(model = best_model)
+
+# Plot the importance of the top 5 features
 xgb.plot.importance(importance_matrix = importance, top_n = 5)
 
-### 6. Prediction and Accuracy Measure
-# Use model to make predictions on test data
-pred.y <- predict(final, test.x)
 
-# Label test data according to the predicted probability
-pred.label <- ifelse(pred.y > 0.5, 1, 0)
+# Initialize vectors to store predictions and actual labels
+all_preds <- numeric()
+all_actuals <- numeric()
+
+# Loop over each fold
+for(i in 1:length(xgb_folds)) {
+  # Extract validation set data
+  val_data <- xgb_folds[[i]]$val
+  
+  # Make predictions using the best_model
+  fold_preds <- predict(best_model, val_data)
+  
+  # Extract actual labels from the validation set
+  fold_actuals <- getinfo(val_data, "label")
+  
+  # Store predictions and actuals
+  all_preds <- c(all_preds, fold_preds)
+  all_actuals <- c(all_actuals, fold_actuals)
+}
+
+# Calculate performance metrics based on all predictions and actuals
+# Example: Confusion Matrix, AUC-ROC
 
 # Confusion Matrix
-confusion.matrix <- table(Predicted = pred.label, Actual = test.y)
+pred.label <- ifelse(all_preds > 0.5, 1, 0)
+confusion.matrix <- table(Predicted = pred.label, Actual = all_actuals)
 print(confusion.matrix)
 
 # AUC-ROC
-roc <- roc(test.y, pred.label)
+roc <- roc(all_actuals, all_preds)
 auc <- auc(roc)
 print(auc)
 
-# Visualization
+# Visualization with ggplot2
 ggroc(roc) +
   labs(title = "ROC Curve", x = "False Positive Rate", y = "True Positive Rate") + 
   annotate("text", x = 0.2, y = 0.8, label = paste("AUC =", round(auc, 5)))
+
+
+
+
 
 
 
