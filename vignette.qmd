@@ -1,18 +1,35 @@
 ---
-title: "Using XGBoost for Fraud Detection"
+title: "XGBoost Vignette: Fraud Detection"
 author: "Mu Niu, Yixin Xue, Amber Wang, David Lin, Qifei Cui"
 date: "2023-12-08"
 output: html_document
 ---
 
+### Objectives
+
+In this vignette, you'll be guided through a comprehensive journey from Exploratory Data Analysis(EDA) to employing XGBoost, a cutting-edge and industry-standard model. You'll acquire skills in:
+
+* Utilizing functions from the **ggplot** and **corrplot** packages for EDA and data visualization. These tools are essential for understanding the underlying patterns and relationships in your data.
+
+* Employing functions from the **xgboost** package to train an Extreme Gradient Boosting Model. This powerful machine learning technique is renowned for its efficiency and effectiveness in various predictive modeling tasks.
+
+* Leveraging functions from the **pROC** package to evaluate the performance of your model. This is crucial for assessing the effectiveness of your predictive model in real-world scenarios.
+
+By the end of this vignette, you will have a solid understanding of how to effectively use these tools in a cohesive workflow to build and assess a robust machine learning model.
+
+
+### Prerequisites
+
+First, please follow the action item below to get set up for the vignette. You may need to install one or more packages if the library() calls return an error.
 ```{r, message = FALSE, warning = FALSE}
+# load packages
 library(tidymodels)
 library(xgboost)
 library(tidyverse)
 library(pROC)
 library(ggplot2)
 library(corrplot)
-
+# read data
 data <- read_csv("data/card_transdata.csv") 
 ```
 
