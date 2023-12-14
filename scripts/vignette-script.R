@@ -1,10 +1,32 @@
-### 1.Load Libraries
+### 1.Load Libraries and import dataset
 
 library(tidymodels)
 library(xgboost)
 library(tidyverse)
 library(pROC)
 library(ggplot2)
+# install.packages(c("devtools"))
+devtools::install_github("ldurazo/kaggler", force = TRUE)
+library(tidyverse)
+library(dplyr)
+library(readr)
+library(kaggler)
+
+# check file structure
+root_dir <- rprojroot::find_rstudio_root_file()
+setwd(root_dir)
+if (!dir.exists("./data")){dir.create("./data")} # create "./data" is not exist and set up data directory
+data_dir <- file.path(root_dir, "data")
+
+# setting up kaggle API
+kgl_auth(creds_file = './scripts/kaggle.json')
+
+# download and import
+response <- kgl_datasets_download_all(owner_dataset = "dhanushnarayananr/credit-card-fraud/")
+download.file(response[["url"]], "./data/temp.zip", mode="wb")
+unzip("data/temp.zip", exdir = "./data/", overwrite = TRUE)
+data_file <- "./data/card_transdata.csv"
+data <- read_csv(data_file)
 
 ### 2.Data Cleaning:
 
@@ -136,6 +158,7 @@ ggroc(roc) +
   labs(title = "ROC Curve", x = "False Positive Rate", y = "True Positive Rate") + 
   annotate("text", x = 0.2, y = 0.8, label = paste("AUC =", round(auc, 5)))
 
+####################### This part left for advanced model analysis ####################################################
 ### One hot coding part ###
 # One-hot encoding function using tidyverse
 one_hot_encode <- function(data, column_name) {
@@ -148,7 +171,7 @@ one_hot_encode <- function(data, column_name) {
 }
 
 
-### k-fold validification part
+### k-fold cross-validation
 
 # Number of folds for cross-validation
 k <- 5
