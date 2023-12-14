@@ -7,7 +7,7 @@ output: html_document
 
 #### Objectives
 
-In this vignette, you'll be guided through a comprehensive journey from Exploratory Data Analysis(EDA) to employing XGBoost, a cutting-edge and industry-standard model. You'll acquire skills in:
+In this vignette, you will embark on an in-depth exploration, starting from the foundational theory of XGBoost to its practical application such as Exploratory Data Analysis(EDA) and XGBoost model training. This journey will lead you to effectively utilize XGBoost, which is a cutting-edge and industry-standard model. You'll develop skills in:
 
 * Utilizing functions from the **ggplot** and **corrplot** packages for EDA and data visualization. These tools are essential for understanding the underlying patterns and relationships in your data.
 
@@ -29,6 +29,7 @@ library(tidyverse)
 library(pROC)
 library(ggplot2)
 library(corrplot)
+library(gridExtra)
 # read data
 data <- read_csv("data/card_transdata.csv") 
 ```
@@ -37,7 +38,10 @@ data <- read_csv("data/card_transdata.csv")
 
 XGBoost, an acronym for eXtreme Gradient Boosting, was crafted by Dr. Tianqi Chen in 2016 as a gradient-boosting algorithm. Demonstrating remarkable success, it has emerged as a formidable player in various data science competitions. Renowned for its exceptional performance, XGBoost stands out as a robust solution for tasks such as handling structured data, text classification, regression, and notably, exhibiting superior capabilities on large-scale datasets. Our vignette presents a comprehensive exploration of XGBoost, including its mathematical principles, programming language support, and practical application in classification problems.
 
-## Introduction to Boosted Trees and XGBoost
+
+## Principal and Theory
+
+Prior to implementing the XGBoost model on the dataset, it is crucial to first understand the underlying mathematical principles of the Boosted Trees and XGBoost
 
 **Gradient Boosted Decision Tree (GBDT)**
 
@@ -79,13 +83,17 @@ We find that the objective function for each tree depends only on $g_i$ and $h_i
 
 We first look at a basic greedy approach for finding best split point.
 
-![](img/Exact_greedy_algorithm.png)
+```{r, echo = F, out.width = "500px",  out.height = "300px"}
+knitr::include_graphics("img/Exact_greedy_algorithm.png")
+```
 
 In the above Exact Greedy Algorithm, we need to traverse every possible value of every feature to find the best split point. The score measures the reduction of loss function before and after the split. However, the method is inefficient when dealing with large datasets.
 
 Instead, XGBoost used an approximated approach to find split points efficiently.
 
-![](img/approximate_algorithm.webp)
+```{r, echo = F, out.width = "500px",  out.height = "300px"}
+knitr::include_graphics("img/approximate_algorithm.webp")
+```
 
 In the approximate framework, we first select some candidate splitting points according to percentiles of the feature distribution based on some criteria. For instance, a sorted feature column contains 10 values \[1,2,2,2,2,4,5,7,9,20\]. A 0.6 quantile corresponds to 4.
 
@@ -111,9 +119,13 @@ For example, given
 
 -   XGBoost supports column subsampling similar to a random forest.
 
-## Dataset Introduction
+## Application in R: Credit Card Fraud Detection
 
-Our vignette is conducted on a simulated ["Credit Card Fraud"](https://www.kaggle.com/datasets/dhanushnarayananr/credit-card-fraud/data) dataset obtained on Kaggle. This dataset presents a binary classification problem, classifying transactions as either fraudulent or legitimate. With 8 variables and a total of 1,000,000 observations, only 8.74% (87,403) are marked as fraudulent, highlighting a significant class imbalance.
+Having grasped the mathematical concepts behind it, we can now proceed to the most exhilarating segment: applying this model in R
+
+**Dataset Introduction**
+
+This vignette is conducted on a simulated ["Credit Card Fraud"](https://www.kaggle.com/datasets/dhanushnarayananr/credit-card-fraud/data) dataset obtained on Kaggle. This dataset presents a binary classification problem, classifying transactions as either fraudulent or legitimate. With 8 variables and a total of 1,000,000 observations, only 8.74% (87,403) are marked as fraudulent, highlighting a significant class imbalance.
 
 ```{r, echo=FALSE, message= F}
 head(data) %>% knitr::kable()
@@ -132,7 +144,10 @@ The variable explanations are as follows:
 |online_order | Is the transaction an online order| Discrete |
 |fraud | Is the transaction fraudulent| Discrete |
 
-## Exploratory Data Analysis
+**Exploratory Data Analysis**
+
+Building on the introduction, we've established a basic understanding of the dataset, including the meaning of each variable. But before progressing to model training, it's important to deepen our familiarity with the data through comprehensive Exploratory Data Analysis.
+
 
 First, we want to check if there is missing values in the dataset
 
@@ -163,19 +178,22 @@ data %>%
 From the correlation plot, the numerical variable 'ratio_to_median' has a positive correlation with respect to 'fraud', and then are 'distance_from_home' and 'online_order'. Other than that, 'used_pin_number' has negatively correlated with 'fraud'. Lastly, we want to specifically analyze the distribution of the response variable, which is our most interested variable.
 
 ```{r, message = F}
-data %>%
-  ggplot(aes(x = fraud)) +
-  geom_bar() +
-  labs(title = "Fraud Distribution", x = 'fraud', y = 'count') +
-  theme(plot.title = element_text(hjust = 0.5))
+plot.fraud <- ggplot(data, aes(x = ifelse(data$fraud == 0, 'Safe', 'Fraud'))) + 
+  geom_bar(fill = c('cyan','cornflowerblue')) +
+  labs(title="Distribution of Fraud in the Dataset", x="Fraud Class", y="Count") + 
+  theme(plot.title = element_text(hjust = 0.5)) +
+  geom_text(aes(label = after_stat(count)), stat = "count", vjust = 1.5, colour = "white")
+table.fraud <- table(ifelse(data$fraud == 0, 'Safe', 'Fraud')) %>% 
+  rbind(c('8.74%','91.26%')) %>% 
+  as.data.frame() %>% tableGrob()
+grid.arrange(arrangeGrob(plot.fraud, table.fraud, ncol=2))
 ```
 
 This graph represents the distribution of 'fraud'. Around 91% of the transactions are not fraud and 9% are fraud, which reflects a imbalance in the data. This imbalance suggests adapting performance metrics like AUC-ROC, f1 score as evaluation metrics instead of "accurary" to assess the ML model.
 
+**Data Preprocessing**
 
-## Data Preprocessing
-
-In preparation for modeling, the dataset undergoes initial processing steps. Outliers are systematically trimmed, and selected variables are renamed for clarity and conciseness. Subsequently, the mutate function is employed to enact transformations, notably generating scaled representations for the columns 'dist_home,' 'dist_last_transact,' and 'ratio_to_med_price.'
+Prior to model fitting, it's essential to assess the scale of the variables, as disparities in scale can adversely affect model performance. In our dataset, variables like distance and ratio are not on the same scale, necessitating their transformation to a unified scale. Additionally, other preprocessing steps are undertaken, including systematic trimming of outliers and renaming selected variables for enhanced clarity and succinctness.
 
 ```{r}
 trim <- function(x, .at){
@@ -192,9 +210,11 @@ data <- data %>%
 ```
 
 
-## Fraud Detection with XGBoost in R
+**Fraud Detection with XGBoost in R**
 
-### Data Preparation
+* Data Preparation
+
+Once the data is cleaned, additional preparations are required before we proceed with model fitting. Similar to other models, the first step involves splitting the data into subsets. A notable feature of the XGBoost function is the 'watchlist' parameter, which allows the inclusion of a validation dataset. This feature displays the log-loss for each boosting iteration on both the training and validation sets, aiding in the prevention of overfitting. Therefore, we partition our dataset into training (60%), validation (20%), and testing (20%) subsets. We apply stratification on the ‘fraud’ variable to ensure each subset is representative of the original dataset's composition. Following this, the split data must be converted to xgb.DMatrix format, an efficient data structure that is specifically required by the XGBoost model.
 
 ```{r}
 #set seed for reproducibility
@@ -219,13 +239,20 @@ val.y <-  data.val %>% pull(fraud)
 #define predictor and response variables in testing set
 test.x <-  data.matrix(data.test %>% select(-fraud))
 test.y <-  data.test %>% pull(fraud)
+
+#define xgb.DMatirx: This is a specialized data structure that xgboost uses for efficiency
+xgb.train <-  xgb.DMatrix(data = train.x, label = train.y)
+xgb.val <-  xgb.DMatrix(data = val.x, label = val.y)
+xgb.test <-  xgb.DMatrix(data = test.x, label = test.y)
 ```
 
-### Model Fitting
+**Model Fitting**
 
--   objective: What's your goal? In this case, we use 'binary:logistic' to predict the probability of having a fraud based on the predictor variables
+Finally, we are at the model fitting part! Let's first talk about the parameters:
 
--   eta: How fast to learn? default value 0.3
+-   objective: The goal of the model. In this case, we use 'binary:logistic' to predict the probability of having a fraud based on the predictor variables
+
+-   eta: The learning speed and we used the default value of 0.3
 
 -   data: Training data in DMatrix structure
 
@@ -237,16 +264,12 @@ test.y <-  data.test %>% pull(fraud)
 
 -   early_stopping_rounds: Stop the training process if the model's accuracy on validation set hasn't improved for the specified number of rounds
 
-```{r}
-#define xgb.DMatirx: This is a specialized data structure that xgboost uses for efficiency
-xgb.train <-  xgb.DMatrix(data = train.x, label = train.y)
-xgb.val <-  xgb.DMatrix(data = val.x, label = val.y)
-xgb.test <-  xgb.DMatrix(data = test.x, label = test.y)
-```
+As mentioned earlier, we utilize a watchlist along with a validation set to determine the optimal number of boosting rounds (nrounds). During training, we monitor the model's performance on both the training and validation datasets. The watchlist is often used in conjunction with the early_stopping_rounds parameter, which helps in identifying the point of overfitting and the appropriate time to halt the training process. The training ceases when there is no improvement in the model's performance on the validation set for a consecutively specified number of rounds. At this point, the early_stopping_rounds feature intervenes and shows the optimal number of boosting iterations.
 
-Here we use a watchlist and a validation set to select the optimal number of boosting rounds(nrounds). When training, we track the performance of the model on the training and validation datasets. Watchlist is usually used with the early_stopping_rounds parameter to determine when the model starts to overfit and we should stop.
+**NOTE:** The output of the following code chunk is long, but we have chosen to keep it in its entirety. This decision is made to comprehensively illustrate the entire process of boosting iterations, and to clearly demonstrate the functionality of both the watchlist and early_stopping_rounds.
 
 ```{r}
+# define the watchlist and other parameters
 watchlist = list(train=xgb.train, validation=xgb.val)
 
 params <- list(
@@ -254,7 +277,7 @@ params <- list(
   eta = 0.3 # learning rate
 )
 
-#fit XGBoost model and display training and testing data at each round
+# fit XGBoost model: display training and testing data at each round
 model <-  xgb.train(params = params, 
                     data = xgb.train, # Training data
                     max.depth = 3, # Size of each individual tree
@@ -263,13 +286,13 @@ model <-  xgb.train(params = params,
                     early_stopping_rounds = 50) # Number of iterations we will wait for the next decrease
 ```
 
-## Results and Analysis
+**Results and Analysis**
 
-Our model stops boosting at 261th round, which means the model accuracy decreases in the next 50 rounds. So we know that overfitting occurs after that. Hence, we changed parameter nrounds to 216 to train our final model.
+Our model stops boosting at 216th round, which means the model accuracy decreases in the next 50 rounds. So we know that overfitting occurs after that. Hence, we changed parameter nrounds to 216 to train our final model.
 
 Similar to the random forest, we can visualize the variable importance in XGBoost.
 
-```{r}
+```{r, eval = F}
 # Define final model
 # The argument verbose = 0 tells R not to display the training and testing error for each round.
 final <-  xgboost(params = params, data = xgb.train, max.depth = 3, nrounds = 216, verbose = 0)
@@ -284,9 +307,9 @@ head(importance)
 xgb.plot.importance(importance_matrix = importance, top_n = 5)
 ```
 
-### Prediction and Accuracy Measure
+**Prediction and Accuracy Measure**
 
-```{r}
+```{r, eval = F}
 # Use model to make predictions on test data
 pred.y <- predict(final, test.x)
 
