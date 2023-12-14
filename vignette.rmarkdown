@@ -507,7 +507,7 @@ ggroc(roc) +
 ```
 
 
-These AUC values are very close to 1, which suggests that both models perform exceptionally well in distinguishing between the classes. The model trained with SMOTE has a slightly higher AUC, indicating a marginally better performance in terms of classification. Notice that when 
+These AUC values are very close to 1, which suggests that both models perform exceptionally well in distinguishing between the classes. The model trained with SMOTE has a slightly higher AUC, indicating a marginally better performance in terms of classification. 
 
 
 |           |          Actual           |                           |
@@ -551,7 +551,6 @@ Before running the optimization, we need to prepare our data. Preparing data inv
 
 
 
-
 ```{r, eval=FALSE}
 # Set seed for reproducibility
 set.seed(197)
@@ -583,7 +582,6 @@ for(i in 1:k){
   xgb_folds[[i]] <- list(train = xgb_train_fold, val = xgb_val_fold)
 }
 ```
-
 
 
 
@@ -668,7 +666,7 @@ for(i in 1:nrow(param_grid)){
 ```
 
 
-This approach ensures that we systematically search through the hyperparameter space and validate each model's performance in a way that is robust against overfitting.
+This approach ensures that we systematically search through the hyperparameter space and validate each model's performance in a way that is robust against overfitting. 
 
 ## Check List
 
