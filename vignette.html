@@ -182,7 +182,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>In the approximate framework, we first select some candidate splitting points according to percentiles of the feature distribution based on some criteria. For instance, a sorted feature column contains 10 values [1,2,2,2,2,4,5,7,9,20]. A 0.6 quantile corresponds to 4.</p>
 <p><strong>Weighted Quantile Sketch</strong></p>
 <p>How do we find these candidate split points? We cannot assign equal weights to every observation of the feature, as larger values may have a more significant impact on the loss function. Therefore, we need to calculate a weight for each feature value to make candidates distribute evenly on the data.</p>
-<p>For each observation, XGBoost used its second-order derivative <span class="math inline">\(h_i\)</span> as weight. Formally, let multi-set <span class="math inline">\(D_k = {(x_{1k},h_1), (x_{2k}, h_2)…(x_{nk}, h_{n})}\)</span> denote k-th feature value and its corresponding second-order gradient, the rank function is <span class="math display">\[r_k(z) = \frac{1}{\sum_{(x,h) \in D_k}h}\sum_{(x,h) \in D_k, x &lt; z}h\]</span>.</p>
+<p>For each observation, XGBoost used its second-order derivative <span class="math inline">\(h_i\)</span> as weight. Formally, let multi-set <span class="math inline">\(D_k = {(x_{1k},h_1), (x_{2k}, h_2)&lt;e2&gt;&lt;80&gt;&lt;a6&gt;(x_{nk}, h_{n})}\)</span> denote k-th feature value and its corresponding second-order gradient, the rank function is <span class="math display">\[r_k(z) = \frac{1}{\sum_{(x,h) \in D_k}h}\sum_{(x,h) \in D_k, x &lt; z}h\]</span>.</p>
 <p>For example, given</p>
 <table class="table">
 <thead>
@@ -444,7 +444,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <ul>
 <li>Data Preparation</li>
 </ul>
-<p>Once the data is cleaned, additional preparations are required before we proceed with model fitting. Similar to other models, the first step involves splitting the data into subsets. A notable feature of the XGBoost function is the ‘watchlist’ parameter, which allows the inclusion of a validation dataset. This feature displays the log-loss for each boosting iteration on both the training and validation sets, aiding in the prevention of overfitting. Therefore, we partition our dataset into training (60%), validation (20%), and testing (20%) subsets. We apply stratification on the ‘fraud’ variable to ensure each subset is representative of the original dataset’s composition. Following this, the split data must be converted to xgb.DMatrix format, an efficient data structure that is specifically required by the XGBoost model.</p>
+<p>Once the data is cleaned, additional preparations are required before we proceed with model fitting. Similar to other models, the first step involves splitting the data into subsets. A notable feature of the XGBoost function is the ‘watchlist’ parameter, which allows the inclusion of a validation dataset. This feature displays the log-loss for each boosting iteration on both the training and validation sets, aiding in the prevention of overfitting. Therefore, we partition our dataset into training (60%), validation (20%), and testing (20%) subsets. We apply stratification on the <e2>&lt;80&gt;&lt;98&gt;fraud<e2>&lt;80&gt;&lt;99&gt; variable to ensure each subset is representative of the original dataset’s composition. Following this, the split data must be converted to xgb.DMatrix format, an efficient data structure that is specifically required by the XGBoost model.</e2></e2></p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co">#set seed for reproducibility</span></span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">197</span>)</span>
@@ -563,13 +563,13 @@ Will train until validation_logloss hasn't improved in 50 rounds.
 [54]    train-logloss:0.002057  validation-logloss:0.002166 
 [55]    train-logloss:0.001896  validation-logloss:0.002013 
 [56]    train-logloss:0.001812  validation-logloss:0.001927 
-[57]    train-logloss:0.001728  validation-logloss:0.001848 
-[58]    train-logloss:0.001664  validation-logloss:0.001779 
-[59]    train-logloss:0.001565  validation-logloss:0.001684 
-[60]    train-logloss:0.001492  validation-logloss:0.001612 
-[61]    train-logloss:0.001448  validation-logloss:0.001569 
-[62]    train-logloss:0.001392  validation-logloss:0.001516 
-[63]    train-logloss:0.001326  validation-logloss:0.001445 
+[57]    train-logloss:0.001728  validation-logloss:0.001846 
+[58]    train-logloss:0.001664  validation-logloss:0.001778 
+[59]    train-logloss:0.001565  validation-logloss:0.001682 
+[60]    train-logloss:0.001492  validation-logloss:0.001610 
+[61]    train-logloss:0.001448  validation-logloss:0.001568 
+[62]    train-logloss:0.001392  validation-logloss:0.001514 
+[63]    train-logloss:0.001326  validation-logloss:0.001444 
 [64]    train-logloss:0.001247  validation-logloss:0.001365 
 [65]    train-logloss:0.001195  validation-logloss:0.001316 
 [66]    train-logloss:0.001156  validation-logloss:0.001277 
@@ -586,7 +586,7 @@ Will train until validation_logloss hasn't improved in 50 rounds.
 [77]    train-logloss:0.000744  validation-logloss:0.000886 
 [78]    train-logloss:0.000712  validation-logloss:0.000852 
 [79]    train-logloss:0.000683  validation-logloss:0.000826 
-[80]    train-logloss:0.000622  validation-logloss:0.000770 
+[80]    train-logloss:0.000622  validation-logloss:0.000769 
 [81]    train-logloss:0.000607  validation-logloss:0.000755 
 [82]    train-logloss:0.000589  validation-logloss:0.000736 
 [83]    train-logloss:0.000567  validation-logloss:0.000714 
@@ -605,12 +605,12 @@ Will train until validation_logloss hasn't improved in 50 rounds.
 [96]    train-logloss:0.000349  validation-logloss:0.000519 
 [97]    train-logloss:0.000338  validation-logloss:0.000511 
 [98]    train-logloss:0.000327  validation-logloss:0.000496 
-[99]    train-logloss:0.000312  validation-logloss:0.000482 
+[99]    train-logloss:0.000312  validation-logloss:0.000481 
 [100]   train-logloss:0.000302  validation-logloss:0.000472 
 [101]   train-logloss:0.000292  validation-logloss:0.000462 
 [102]   train-logloss:0.000283  validation-logloss:0.000454 
 [103]   train-logloss:0.000275  validation-logloss:0.000449 
-[104]   train-logloss:0.000258  validation-logloss:0.000432 
+[104]   train-logloss:0.000258  validation-logloss:0.000431 
 [105]   train-logloss:0.000250  validation-logloss:0.000423 
 [106]   train-logloss:0.000242  validation-logloss:0.000420 
 [107]   train-logloss:0.000233  validation-logloss:0.000407 
@@ -621,28 +621,28 @@ Will train until validation_logloss hasn't improved in 50 rounds.
 [112]   train-logloss:0.000187  validation-logloss:0.000368 
 [113]   train-logloss:0.000182  validation-logloss:0.000362 
 [114]   train-logloss:0.000177  validation-logloss:0.000359 
-[115]   train-logloss:0.000171  validation-logloss:0.000357 
+[115]   train-logloss:0.000171  validation-logloss:0.000356 
 [116]   train-logloss:0.000166  validation-logloss:0.000351 
 [117]   train-logloss:0.000160  validation-logloss:0.000345 
 [118]   train-logloss:0.000155  validation-logloss:0.000344 
 [119]   train-logloss:0.000152  validation-logloss:0.000341 
-[120]   train-logloss:0.000147  validation-logloss:0.000340 
-[121]   train-logloss:0.000142  validation-logloss:0.000337 
+[120]   train-logloss:0.000147  validation-logloss:0.000339 
+[121]   train-logloss:0.000142  validation-logloss:0.000336 
 [122]   train-logloss:0.000138  validation-logloss:0.000332 
 [123]   train-logloss:0.000133  validation-logloss:0.000328 
 [124]   train-logloss:0.000130  validation-logloss:0.000327 
-[125]   train-logloss:0.000126  validation-logloss:0.000324 
+[125]   train-logloss:0.000126  validation-logloss:0.000323 
 [126]   train-logloss:0.000123  validation-logloss:0.000323 
 [127]   train-logloss:0.000119  validation-logloss:0.000321 
-[128]   train-logloss:0.000116  validation-logloss:0.000319 
+[128]   train-logloss:0.000116  validation-logloss:0.000318 
 [129]   train-logloss:0.000112  validation-logloss:0.000314 
 [130]   train-logloss:0.000109  validation-logloss:0.000312 
 [131]   train-logloss:0.000106  validation-logloss:0.000308 
 [132]   train-logloss:0.000103  validation-logloss:0.000309 
-[133]   train-logloss:0.000101  validation-logloss:0.000307 
-[134]   train-logloss:0.000098  validation-logloss:0.000304 
+[133]   train-logloss:0.000101  validation-logloss:0.000306 
+[134]   train-logloss:0.000098  validation-logloss:0.000303 
 [135]   train-logloss:0.000095  validation-logloss:0.000304 
-[136]   train-logloss:0.000093  validation-logloss:0.000302 
+[136]   train-logloss:0.000093  validation-logloss:0.000301 
 [137]   train-logloss:0.000091  validation-logloss:0.000299 
 [138]   train-logloss:0.000088  validation-logloss:0.000299 
 [139]   train-logloss:0.000086  validation-logloss:0.000299 
@@ -650,14 +650,14 @@ Will train until validation_logloss hasn't improved in 50 rounds.
 [141]   train-logloss:0.000082  validation-logloss:0.000297 
 [142]   train-logloss:0.000080  validation-logloss:0.000296 
 [143]   train-logloss:0.000078  validation-logloss:0.000296 
-[144]   train-logloss:0.000076  validation-logloss:0.000295 
+[144]   train-logloss:0.000076  validation-logloss:0.000294 
 [145]   train-logloss:0.000074  validation-logloss:0.000296 
 [146]   train-logloss:0.000068  validation-logloss:0.000288 
 [147]   train-logloss:0.000067  validation-logloss:0.000284 
 [148]   train-logloss:0.000065  validation-logloss:0.000284 
 [149]   train-logloss:0.000063  validation-logloss:0.000284 
 [150]   train-logloss:0.000062  validation-logloss:0.000283 
-[151]   train-logloss:0.000061  validation-logloss:0.000282 
+[151]   train-logloss:0.000061  validation-logloss:0.000281 
 [152]   train-logloss:0.000060  validation-logloss:0.000281 
 [153]   train-logloss:0.000058  validation-logloss:0.000280 
 [154]   train-logloss:0.000057  validation-logloss:0.000282 
@@ -682,18 +682,18 @@ Will train until validation_logloss hasn't improved in 50 rounds.
 [173]   train-logloss:0.000038  validation-logloss:0.000274 
 [174]   train-logloss:0.000035  validation-logloss:0.000272 
 [175]   train-logloss:0.000035  validation-logloss:0.000273 
-[176]   train-logloss:0.000034  validation-logloss:0.000273 
+[176]   train-logloss:0.000034  validation-logloss:0.000272 
 [177]   train-logloss:0.000033  validation-logloss:0.000271 
 [178]   train-logloss:0.000033  validation-logloss:0.000272 
 [179]   train-logloss:0.000031  validation-logloss:0.000271 
 [180]   train-logloss:0.000031  validation-logloss:0.000272 
 [181]   train-logloss:0.000030  validation-logloss:0.000270 
-[182]   train-logloss:0.000030  validation-logloss:0.000272 
+[182]   train-logloss:0.000030  validation-logloss:0.000271 
 [183]   train-logloss:0.000028  validation-logloss:0.000270 
 [184]   train-logloss:0.000028  validation-logloss:0.000270 
 [185]   train-logloss:0.000028  validation-logloss:0.000269 
 [186]   train-logloss:0.000027  validation-logloss:0.000270 
-[187]   train-logloss:0.000027  validation-logloss:0.000271 
+[187]   train-logloss:0.000027  validation-logloss:0.000270 
 [188]   train-logloss:0.000026  validation-logloss:0.000270 
 [189]   train-logloss:0.000026  validation-logloss:0.000271 
 [190]   train-logloss:0.000025  validation-logloss:0.000270 
@@ -711,7 +711,7 @@ Will train until validation_logloss hasn't improved in 50 rounds.
 [202]   train-logloss:0.000020  validation-logloss:0.000265 
 [203]   train-logloss:0.000020  validation-logloss:0.000265 
 [204]   train-logloss:0.000020  validation-logloss:0.000262 
-[205]   train-logloss:0.000019  validation-logloss:0.000264 
+[205]   train-logloss:0.000019  validation-logloss:0.000263 
 [206]   train-logloss:0.000019  validation-logloss:0.000262 
 [207]   train-logloss:0.000019  validation-logloss:0.000263 
 [208]   train-logloss:0.000019  validation-logloss:0.000263 
@@ -733,7 +733,7 @@ Will train until validation_logloss hasn't improved in 50 rounds.
 [224]   train-logloss:0.000015  validation-logloss:0.000264 
 [225]   train-logloss:0.000015  validation-logloss:0.000265 
 [226]   train-logloss:0.000015  validation-logloss:0.000264 
-[227]   train-logloss:0.000015  validation-logloss:0.000265 
+[227]   train-logloss:0.000015  validation-logloss:0.000264 
 [228]   train-logloss:0.000015  validation-logloss:0.000264 
 [229]   train-logloss:0.000015  validation-logloss:0.000265 
 [230]   train-logloss:0.000014  validation-logloss:0.000265 
@@ -766,7 +766,7 @@ Will train until validation_logloss hasn't improved in 50 rounds.
 [257]   train-logloss:0.000011  validation-logloss:0.000270 
 [258]   train-logloss:0.000011  validation-logloss:0.000269 
 [259]   train-logloss:0.000011  validation-logloss:0.000270 
-[260]   train-logloss:0.000011  validation-logloss:0.000270 
+[260]   train-logloss:0.000011  validation-logloss:0.000269 
 [261]   train-logloss:0.000011  validation-logloss:0.000269 
 [262]   train-logloss:0.000011  validation-logloss:0.000270 
 [263]   train-logloss:0.000011  validation-logloss:0.000270 
@@ -833,7 +833,7 @@ Stopping. Best iteration:
 </tr>
 </tbody>
 </table>
-<p>Additionally, it’s always a good idea to review the important features identified by the model after training an XGBoost. We can utilize the xgb.plot.importance function to visualize the most important features identified by XGBoost. This step not only aids in understanding the model’s decisions but also enhances our familiarity with this type of dataset, showcasing one of the advantages of tree-based methods: interpretability. The most critical among these is the ratio of the transaction purchase price to the median purchase price. This finding suggests that transactions with amounts significantly deviating from the median are more likely to be fraudulent. Also, the model indicates that online transactions are more likely to be fraudulent. Additionally, the distances from home to the current transaction’s location another important features. Transactions occurring at locations far from home are also more likely to be identified as fraudulent.</p>
+<p>Additionally, it’s always a good idea to review the important features identified by the model after training an XGBoost. We can utilize the xgb.plot.importance function to visualize the most important features identified by XGBoost. This step not only aids in understanding the model’s decisions but also enhances our familiarity with this type of dataset, showcasing one of the advantages of tree-based methods: interpretability. The most critical among these is the ratio of the transaction purchase price to the median purchase price. This finding suggests that transactions with amounts significantly deviating from the median are more likely to be fraudulent. Also, the model indicates that online transactions are more likely to be fraudulent. Additionally, the distances from home to the current transaction<e2>&lt;80&gt;&lt;99&gt;s location another important features. Transactions occurring at locations far from home are also more likely to be identified as fraudulent.</e2></p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Feature Importance</span></span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>importance <span class="ot">&lt;-</span> <span class="fu">xgb.importance</span>(<span class="at">feature_names =</span> <span class="fu">colnames</span>(train.x), <span class="at">model =</span> final)</span>
