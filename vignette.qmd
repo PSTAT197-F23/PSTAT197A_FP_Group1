@@ -331,7 +331,6 @@ val_smote.y <-  data_smote.val %>% pull(fraud)
 # Define xgb.DMatrix for the SMOTE datasets
 xgb_smote.train <-  xgb.DMatrix(data = train_smote.x, label = train_smote.y)
 xgb_smote.val <-  xgb.DMatrix(data = val_smote.x, label = val_smote.y)
-xgb_smote.test <-  xgb.DMatrix(data = test_smote.x, label = test_smote.y)
 ```
 
 **Model Fitting**
