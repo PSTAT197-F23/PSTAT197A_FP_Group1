@@ -136,6 +136,121 @@ ggroc(roc) +
   labs(title = "ROC Curve", x = "False Positive Rate", y = "True Positive Rate") + 
   annotate("text", x = 0.2, y = 0.8, label = paste("AUC =", round(auc, 5)))
 
+### One hot coding part ###
+# One-hot encoding function using tidyverse
+one_hot_encode <- function(data, column_name) {
+  data %>%
+    separate_rows({{ column_name }}, sep = ";") %>%
+    mutate(value = 1) %>%
+    pivot_wider(names_from = {{ column_name }}, values_from = value, names_prefix = paste0(column_name, "."), values_fill = 0) %>%
+    group_by(response.id) %>%
+    summarise(across(starts_with(paste0(column_name, ".")), max, .names = "{.col}"))
+}
 
+
+### k-fold validification part
+
+# Number of folds for cross-validation
+k <- 5
+
+# Create k-fold cross-validation indices
+folds <- vfold_cv(data, v = k, strata = fraud)
+
+# Prepare a list to store xgb.DMatrix data for each fold
+xgb_folds <- list()
+
+# Loop
+for(i in 1:k){
+  # Split data into training and validation sets
+  train_fold <- training(folds$splits[[i]])
+  val_fold <- testing(folds$splits[[i]])
+  
+  # Define predictor and response variables
+  train.x <- data.matrix(train_fold %>% select(-fraud))
+  train.y <- train_fold %>% pull(fraud)
+  
+  # Define predictor and response variables for validation
+  val.x <- data.matrix(val_fold %>% select(-fraud))
+  val.y <- val_fold %>% pull(fraud)
+  
+  # Create xgb.DMatrix for the current fold
+  xgb_train_fold <- xgb.DMatrix(data = train.x, label = train.y)
+  xgb_val_fold <- xgb.DMatrix(data = val.x, label = val.y)
+  
+  # Store in the list
+  xgb_folds[[i]] <- list(train = xgb_train_fold, val = xgb_val_fold)
+}
+
+
+### Grid Search Part
+# Define the parameter grid
+param_grid <- expand.grid(
+  eta = c(0.01, 0.1, 0.3),
+  max_depth = c(1:10),
+  gamma = c(0, 1, 5)
+)
+
+# Initialize a variable to track the best score
+best_score <- -Inf
+
+# Initialize a variable to store the best model
+best_model <- NULL
+
+# Initialize a variable to store the best parameters
+best_params <- NULL
+
+## Metric Analysis Structure
+performance_metric <- function(predictions, actuals) {
+  # Replace this with a spectific metric calculation
+  # For example, this could be F1 score, precision, recall, etc.
+  calculated_metric <- 0
+  return(calculated_metric)
+}
+
+## Training and Validification
+# Loop over all combinations of parameters
+for(i in 1:nrow(param_grid)){
+  # Extract parameters for this iteration
+  params <- param_grid[i, ]
+  
+  # List to store cross-validation scores
+  cv_scores <- numeric(length(xgb_folds))
+  
+  # Perform k-fold cross-validation
+  for(j in 1:length(xgb_folds)){
+    # Define the watchlist for the current fold
+    watchlist <- list(train = xgb_folds[[j]]$train, validation = xgb_folds[[j]]$val)
+    
+    # Train the model on the current fold
+    model <- xgb.train(params = as.list(params),
+                       data = xgb_folds[[j]]$train,
+                       nrounds = 100, # Adjust as necessary
+                       watchlist = watchlist,
+                       early_stopping_rounds = 50)
+    
+    # Evaluate the model on the validation set
+    pred <- predict(model, xgb_folds[[j]]$val)
+    
+    actual_vals <- getinfo(xgb_folds[[j]]$val, "label")
+    score <- roc(actual_vals, pred)$auc
+    
+    
+    # Store the score
+    cv_scores[j] <- score
+  }
+  
+  # Compute the average score across all folds
+  avg_score <- mean(cv_scores)
+  
+  # Update best score, model, and parameters if current model is better
+  if(avg_score > best_score){
+    best_score <- avg_score
+    best_model <- model
+    best_params <- params
+  }
+}
+
+# best_model now contains the model with the best parameters
+# best_params contains the corresponding parameters
 
 

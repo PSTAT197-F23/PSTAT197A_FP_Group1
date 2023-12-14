@@ -5,6 +5,7 @@ date: "2023-12-13"
 output: html_document
 ---
 
+
 #### Objectives
 
 In this vignette, you will embark on an in-depth exploration, starting from the foundational theory of XGBoost to its practical application such as Exploratory Data Analysis(EDA) and XGBoost model training. This journey will lead you to effectively utilize XGBoost, which is a cutting-edge and industry-standard model. You'll develop skills in:
@@ -21,6 +22,7 @@ By the end of this vignette, you will have a solid understanding of how to effec
 
 First, please follow the action item below to get set up for the vignette. You may need to install one or more packages if the library() calls return an error.
 
+
 ```{r, message = FALSE, warning = FALSE}
 # load packages
 library(tidymodels)
@@ -34,6 +36,7 @@ library(DMwR)
 # read data
 data <- read_csv("data/card_transdata.csv") 
 ```
+
 
 ## Introduction
 
@@ -83,17 +86,21 @@ We find that the objective function for each tree depends only on $g_i$ and $h_i
 
 We first look at a basic greedy approach for finding best split point.
 
+
 ```{r, echo = F, out.width = "500px",  out.height = "300px"}
 knitr::include_graphics("img/Exact_greedy_algorithm.png")
 ```
+
 
 In the above Exact Greedy Algorithm, we need to traverse every possible value of every feature to find the best split point. The score measures the reduction of loss function before and after the split. However, the method is inefficient when dealing with large datasets.
 
 Instead, XGBoost used an approximated approach to find split points efficiently.
 
+
 ```{r, echo = F, out.width = "500px",  out.height = "300px"}
 knitr::include_graphics("img/approximate_algorithm.webp")
 ```
+
 
 In the approximate framework, we first select some candidate splitting points according to percentiles of the feature distribution based on some criteria. For instance, a sorted feature column contains 10 values \[1,2,2,2,2,4,5,7,9,20\]. A 0.6 quantile corresponds to 4.
 
@@ -101,7 +108,7 @@ In the approximate framework, we first select some candidate splitting points ac
 
 How do we find these candidate split points? We cannot assign equal weights to every observation of the feature, as larger values may have a more significant impact on the loss function. Therefore, we need to calculate a weight for each feature value to make candidates distribute evenly on the data.
 
-For each observation, XGBoost used its second-order derivative $h_i$ as weight. Formally, let multi-set $D_k = {(x_{1k},h_1), (x_{2k}, h_2)…(x_{nk}, h_{n})}$ denote k-th feature value and its corresponding second-order gradient, the rank function is $$r_k(z) = \frac{1}{\sum_{(x,h) \in D_k}h}\sum_{(x,h) \in D_k, x < z}h$$.
+For each observation, XGBoost used its second-order derivative $h_i$ as weight. Formally, let multi-set $D_k = {(x_{1k},h_1), (x_{2k}, h_2)<e2><80><a6>(x_{nk}, h_{n})}$ denote k-th feature value and its corresponding second-order gradient, the rank function is $$r_k(z) = \frac{1}{\sum_{(x,h) \in D_k}h}\sum_{(x,h) \in D_k, x < z}h$$.
 
 For example, given
 
@@ -127,9 +134,11 @@ Having grasped the mathematical concepts behind it, we can now proceed to the mo
 
 This vignette is conducted on a simulated ["Credit Card Fraud"](https://www.kaggle.com/datasets/dhanushnarayananr/credit-card-fraud/data) dataset obtained on Kaggle[@ULB2018]. This dataset presents a binary classification problem, classifying transactions as either fraudulent or legitimate. With 8 variables and a total of 1,000,000 observations, only 8.74% (87,403) are marked as fraudulent, highlighting a significant class imbalance.
 
+
 ```{r, echo=FALSE, message= F}
 head(data) %>% knitr::kable()
 ```
+
 
 The variable explanations are as follows:
 
@@ -150,12 +159,15 @@ Building on the introduction, we've established a basic understanding of the dat
 
 First, we want to check if there is missing values in the dataset
 
+
 ```{r}
 # check missing values
 data %>% is.na() %>% sum()
 ```
 
+
 Through the code above, we know that this dataset contains no missing value, therefore there is no imputation needed. Then, we can use the following chunk to check the distribution of the variables.
+
 
 ```{r, message = F}
 # plot variable distribution
@@ -166,7 +178,9 @@ for (col in colnames(data)) {
 }
 ```
 
+
 We can observe from the density curve graph of each variable that except for the first three, the other 5 variables including our response variable 'fraud' are binary. But the first three variables are greatly skewed. After that, we want to see if correlation exists between the variables.
+
 
 ```{r, message = F}
 # correlation plot
@@ -177,7 +191,9 @@ data %>%
   corrplot(type = 'lower')
 ```
 
+
 From the correlation plot, the numerical variable 'ratio_to_median' has a positive correlation with respect to 'fraud', and then are 'distance_from_home' and 'online_order'. Other than that, 'used_pin_number' has negatively correlated with 'fraud'. Lastly, we want to specifically analyze the distribution of the response variable, which is our most interested variable.
+
 
 ```{r, message = F}
 # response distribution
@@ -192,6 +208,7 @@ table.fraud <- table(ifelse(data$fraud == 0, 'Safe', 'Fraud')) %>%
 grid.arrange(arrangeGrob(plot.fraud, table.fraud, ncol=2))
 ```
 
+
 This graph represents the distribution of 'fraud'. Around 91% of the transactions are not fraud and 9% are fraud, which reflects a imbalance in the data. This imbalance suggests adapting performance metrics like AUC-ROC, f1 score as evaluation metrics instead of "accurary" to assess the ML model.
 
 **SMOTE on Bias Dataset in R**
@@ -202,6 +219,7 @@ Over-sampling is a technique to balance an imbalanced dataset by increasing the 
 **SMOTE** is an advanced over-sampling technique used to create synthetic samples for the minority class in an imbalanced dataset. It works by selecting samples that are close in the feature space, drawing a line between the samples in the space and drawing a new sample at a point along that line.
 
 This approach helps us in creating plausible and diverse synthetic samples, rather than just duplicating existing ones.
+
 
 ```{r}
 data <- as.data.frame(data)
@@ -218,7 +236,9 @@ data_smote$fraud <- as.numeric(as.character(data_smote$fraud))
 ```
 
 
+
 This following graph represents the distribution of 'fraud'. It is noticeable that the data is more balanced.
+
 
 ```{r}
 # Plot for distribution of fraud in data_smote
@@ -241,9 +261,11 @@ table.fraud_smote <- tableGrob(as.data.frame(fraud_table_combined))
 grid.arrange(plot.fraud_smote, table.fraud_smote, ncol = 2)
 ```
 
+
 **Data Preprocessing**
 
 Prior to model fitting, it's essential to assess the scale of the variables, as disparities in scale can adversely affect model performance. In our dataset, variables like distance and ratio are not on the same scale, necessitating their transformation to a unified scale. Additionally, other preprocessing steps are undertaken, including systematic trimming of outliers and renaming selected variables for enhanced clarity and succinctness.
+
 
 ```{r}
 trim <- function(x, .at){
@@ -266,6 +288,7 @@ data_smote <- data_smote %>%
                 ~ trim(scale((.x))[, 1], .at = 3)))
 ```
 
+
 **Fraud Detection with XGBoost in R**
 
 We are going to train model and evaluate the performance as the following:
@@ -275,6 +298,7 @@ We are going to train model and evaluate the performance as the following:
 -   Splitting Train and Test Set
 
 Once the data is cleaned, additional preparations are required before we proceed with model fitting. Similar to other models, the first step involves splitting the data into subsets. A notable feature of the XGBoost function is the 'watchlist' parameter, which allows the inclusion of a validation dataset. This feature displays the log-loss for each boosting iteration on both the training and validation sets, aiding in the prevention of overfitting. Therefore, we partition our dataset into training (60%), validation (20%), and testing (20%) subsets. We apply stratification on the 'fraud' variable to ensure each subset is representative of the original dataset's composition. Following this, the split data must be converted to xgb.DMatrix format, an efficient data structure that is specifically required by the XGBoost model.
+
 
 ```{r}
 #set seed for reproducibility
@@ -306,7 +330,9 @@ xgb.val <-  xgb.DMatrix(data = val.x, label = val.y)
 xgb.test <-  xgb.DMatrix(data = test.x, label = test.y)
 ```
 
+
 Repeat the data preparation process for SMOTEed data.
+
 
 ```{r}
 # Set seed for reproducibility
@@ -333,6 +359,7 @@ xgb_smote.train <-  xgb.DMatrix(data = train_smote.x, label = train_smote.y)
 xgb_smote.val <-  xgb.DMatrix(data = val_smote.x, label = val_smote.y)
 ```
 
+
 **Model Fitting**
 
 Finally, we are at the model fitting part! Let's first talk about the parameters[@XGBoostDocs]:
@@ -355,6 +382,7 @@ As mentioned earlier, we utilize a watchlist along with a validation set to dete
 
 \tiny
 
+
 ```{r}
 # define the watchlist and other parameters
 watchlist = list(train=xgb.train, validation=xgb.val)
@@ -374,7 +402,9 @@ model <-  xgb.train(params = params,
                     verbose = 0) #hide iterations 
 ```
 
+
 In our analysis, we've implemented a comprehensive process involving multiple boosting iterations to fine-tune our XGBoost model. Instead of presenting the extensive textual output of each iteration, we have chosen to visualize the results through a plot of `log_loss_values`. This approach allows us to clearly and concisely demonstrate the impact of each iteration on the model's performance.
+
 
 ```{r}
 # Extracting training and validation log-loss from the model
@@ -389,11 +419,13 @@ ggplot(log_loss_values, aes(x = iter)) +
                         values = c("blue", "red"))
 ```
 
+
 From the graph we could see that both curves show a rapid decrease in log-loss in the initial rounds. This indicates that the model quickly learned patterns from the data. After the initial rounds, both curves flatten out, which suggests that additional rounds do not significantly improve the model's performance in terms of log-loss, suggested the model has reached convergence and further training isn't likely to lead to better performance on the training and validation datasets. 
 
 Given that the log-loss stabilizes after a certain number of rounds, the early stopping technique of XGBoost has been employed to stop training when the validation log-loss does not improve for a given number of rounds. This would save computational resources and prevent potential overfitting.
 
 Repeat the same model fitting process on the SMOTEed data.
+
 
 ```{r}
 # define the watchlist and other parameters
@@ -427,9 +459,11 @@ ggplot(log_loss_values_smote, aes(x = iter)) +
                         values = c("blue", "red"))
 ```
 
+
 **Final Model Result and Analysis**
 
 The final and crucial step involves assessing the model's performance. We employ both the ROC-AUC plot and the confusion matrix for this evaluation. By analyzing the model's performance on the testing dataset using these tools, we observed a remarkable AUC of 0.99988. This exceptionally high score underscores the model's outstanding proficiency in classifying the testing data, as well as its robust generalizability to new, unseen datasets.
+
 
 ```{r, message = F}
 # Use model to make predictions on test data
@@ -471,6 +505,7 @@ ggroc(roc) +
   annotate("text", x = 0.2, y = 0.8, label = paste("AUC =", round(auc, 5)))
 ```
 
+
 These AUC values are very close to 1, which suggests that both models perform exceptionally well in distinguishing between the classes. The model trained with SMOTE has a slightly higher AUC, indicating a marginally better performance in terms of classification. 
 
 
@@ -484,6 +519,7 @@ These AUC values are very close to 1, which suggests that both models perform ex
 
 Additionally, it's always a good idea to review the important features identified by the model after training an XGBoost. We can utilize the xgb.plot.importance function to visualize the most important features identified by XGBoost. This step not only aids in understanding the model's decisions but also enhances our familiarity with this type of dataset, showcasing one of the advantages of tree-based methods: interpretability. The most critical among these is the ratio of the transaction purchase price to the median purchase price. This finding suggests that transactions with amounts significantly deviating from the median are more likely to be fraudulent. Also, the model indicates that online transactions are more likely to be fraudulent. Additionally, the distances from home to the current transaction's location another important features. Transactions occurring at locations far from home are also more likely to be identified as fraudulent.
 
+
 ```{r}
 # Feature Importance
 importance <- xgb.importance(feature_names = colnames(train.x), model = model_smote)
@@ -492,6 +528,7 @@ head(importance) %>% knitr::kable()
 # plot 3 most important features
 xgb.plot.importance(importance_matrix = importance, top_n = 3)
 ```
+
 
 ## Optimization on Real World Dataset
 
@@ -510,6 +547,7 @@ Before running the optimization, we need to prepare our data. Preparing data inv
 * Loop Over Each Fold: We loop over each of the 5 folds and within each iteration, we prepare the training and validation datasets. For XGBoost, we need to convert our data into a special format called xgb.DMatrix, which is optimized for both memory efficiency and training speed.
 
 * Training and Validation Sets: Inside the loop, we separate the features (predictor variables) from the target (response variable, fraud) for both training and validation sets. This separation is essential for supervised learning where the model needs to learn the relationship between the features and the target.
+
 
 
 ```{r, eval=FALSE}
@@ -545,6 +583,7 @@ for(i in 1:k){
 ```
 
 
+
 **Define Parameter Grid**
 
 This section involves setting up a grid of hyperparameters we wish to tune. Hyperparameters are the configuration settings used to structure the machine learning model:
@@ -554,6 +593,7 @@ This section involves setting up a grid of hyperparameters we wish to tune. Hype
 * Tracking Best Performance: We initialize variables to keep track of the best score, the best model, and the best parameters during the grid search.
 
 * Performance Metric Function: An optional performance metric function is defined that will calculate the desired performance metric, such as accuracy, F1 score, etc., based on predictions and actual values. Here we are using the ROC function we used in the example model.
+
 
 ```{r, eval=FALSE}
 # Define the parameter grid
@@ -576,6 +616,7 @@ performance_metric <- function(predictions, actuals) {
 }
 ```
 
+
 **Grid Search**
 
 In this section, we use the parameter grid to find the best hyperparameters for the XGBoost model:
@@ -587,6 +628,7 @@ In this section, we use the parameter grid to find the best hyperparameters for 
 * Model Evaluation: We predict on the validation set and calculate the Area Under the ROC Curve (AUC) as our performance metric. This metric is suitable for binary classification problems.
 
 * Finding the Best Parameters: We calculate the average AUC score across all folds. If the average score of the current model is better than the best score we've tracked so far, we update our best model and parameters.
+
 
 ```{r, eval=FALSE}
 ## Fitting
@@ -622,6 +664,7 @@ for(i in 1:nrow(param_grid)){
 }
 ```
 
+
 This approach ensures that we systematically search through the hyperparameter space and validate each model's performance in a way that is robust against overfitting. 
 
 ## Check List
@@ -636,8 +679,9 @@ This approach ensures that we systematically search through the hyperparameter s
 
 ## Reference
 
-- He, Shen, et al. "An Effective Cost-Sensitive XGBoost Method for Malicious URLs Detection in Imbalanced Dataset." _IEEE Access_, vol. 9, 2021, pp. 93089–93096, doi:10.1109/access.2021.3093094.
+- He, Shen, et al. "An Effective Cost-Sensitive XGBoost Method for Malicious URLs Detection in Imbalanced Dataset." _IEEE Access_, vol. 9, 2021, pp. 93089<e2><80><93>93096, doi:10.1109/access.2021.3093094.
 
 - ULB, Machine Learning Group -. "Credit Card Fraud Detection." _Kaggle_, 23 Mar. 2018, www.kaggle.com/datasets/mlg-ulb/creditcardfraud. Accessed 06 Dec. 2023.
 
-- "XGBoost Documentation." _XGBoost Documentation - Xgboost 2.0.2 Documentation_, xgboost.readthedocs.io/.
+- "XGBoost Documentation<ef><83><81>." _XGBoost Documentation - Xgboost 2.0.2 Documentation_, xgboost.readthedocs.io/.
+
