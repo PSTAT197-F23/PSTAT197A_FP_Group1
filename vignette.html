@@ -139,6 +139,79 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 class="anchored" data-anchor-id="abstract">Abstract</h2>
 <p>XGBoost, an acronym for eXtreme Gradient Boosting, was crafted by Dr.&nbsp;Tianqi Chen in 2016 as a gradient-boosting algorithm. Demonstrating remarkable success, it has emerged as a formidable player in various data science competitions. Renowned for its exceptional performance, XGBoost stands out as a robust solution for tasks such as handling structured data, text classification, regression, and notably, exhibiting superior capabilities on large-scale datasets. Our vignette presents a comprehensive exploration of XGBoost, including its mathematical principles, programming language support, and practical application in classification problems.</p>
 </section>
+<section id="introduction-to-boosted-trees-and-xgboost" class="level2">
+<h2 class="anchored" data-anchor-id="introduction-to-boosted-trees-and-xgboost">Introduction to Boosted Trees and XGBoost</h2>
+<p><strong>Gradient Boosted Decision Tree (GBDT)</strong></p>
+<p>In GBDT, the prediction of observation i is the sum of the predicted values from each of the k trees in the ensemble.</p>
+<p><span class="math display">\[\hat{y} = \sum_{i=1}^{k} f_k(x_i)\]</span>Each tree in the boosting model fits the negative gradient of the loss function to the current model’s prediction, and the current model’s prediction is the sum of the first k-1 trees.</p>
+<p>If we use mean squared error as the loss function in a regression task, each tree simply fits the residual.</p>
+<p>For example, suppose a person is 30 years old, and a GBDT model is used to predict his age.</p>
+<ul>
+<li><p>Given the dataset, suppose the first tree’s prediction is 20.</p></li>
+<li><p>Then the second tree fits the residual, which is 30 - 20 = 10. Suppose the second tree outputs 7.</p></li>
+<li><p>Then the third tree fits the residual 10 - 7 = 3. Suppose the third tree outputs 2.</p></li>
+<li><p>By adding the prediction of the three trees, we get our final prediction.</p></li>
+</ul>
+<p><strong>XGBoost</strong></p>
+<p>XGBoost is an efficient and scalable implementation of the gradient-boosted decision tree.</p>
+<ul>
+<li>Tree Boosting</li>
+</ul>
+<p>The objective function for k-th tree is <span class="math display">\[\sum_{i=1}^{n} l(y_i, \hat{y_i}^{(k)})+\sum_{i=1}^{K}\omega(f_i)\]</span></p>
+<p>The first term in the objective function denotes the loss function. It can be MSE in regression or cross-entropy in classification problems. The second term <span class="math inline">\(\omega(f_i)\)</span> is a regularized term to control the model’s complexity to avoid overfitting.</p>
+<p>When additively training the model, XGBoost used a second-order Taylor expansion to approximate the objective function instead of using the negative gradient.</p>
+<p>After derivation, the optimization goal at step k will be <span class="math display">\[\sum_{i=1}^{n}[g_if_k(x_i) + \frac{1}{2}h_{i}f_k^2(x_i)] + \omega(f_k)\]</span></p>
+<p>where <span class="math inline">\(g_i\)</span> and <span class="math inline">\(h_i\)</span> denote the first-order and second-order derivative of the loss function to the current model’s prediction. i.e.&nbsp;<span class="math inline">\(g_i = \partial_{\hat{y_i}^{k-1}}l(y_i, \hat{y_i}^{k-1})\)</span> and <span class="math inline">\(h_i = \partial^2_{\hat{y_i}{k-1}}l(y_i, \hat{y_i}^{k-1})\)</span></p>
+<p>We find that the objective function for each tree depends only on <span class="math inline">\(g_i\)</span> and <span class="math inline">\(h_i\)</span>, derivatives of the loss function. Therefore, XGBoost can be widely used in many scenarios, including regression, classification, and ranking problems, as long as XGBoost is given a loss function that is second-order differentiable. You can even customize your loss function in XGBoost!</p>
+<p><strong>Approximate Split Finding</strong></p>
+<p>We first look at a basic greedy approach for finding best split point.</p>
+<p><img src="img/Exact_greedy_algorithm.png" class="img-fluid"></p>
+<p>In the above Exact Greedy Algorithm, we need to traverse every possible value of every feature to find the best split point. The score measures the reduction of loss function before and after the split. However, the method is inefficient when dealing with large datasets.</p>
+<p>Instead, XGBoost used an approximated approach to find split points efficiently.</p>
+<p><img src="img/approximate_algorithm.webp" class="img-fluid"></p>
+<p>In the approximate framework, we first select some candidate splitting points according to percentiles of the feature distribution based on some criteria. For instance, a sorted feature column contains 10 values [1,2,2,2,2,4,5,7,9,20]. A 0.6 quantile corresponds to 4.</p>
+<p><strong>Weighted Quantile Sketch</strong></p>
+<p>How do we find these candidate split points? We cannot assign equal weights to every observation of the feature, as larger values may have a more significant impact on the loss function. Therefore, we need to calculate a weight for each feature value to make candidates distribute evenly on the data.</p>
+<p>For each observation, XGBoost used its second-order derivative <span class="math inline">\(h_i\)</span> as weight. Formally, let multi-set <span class="math inline">\(D_k = {(x_{1k},h_1), (x_{2k}, h_2)…(x_{nk}, h_{n})}\)</span> denote k-th feature value and its corresponding second-order gradient, the rank function is <span class="math display">\[r_k(z) = \frac{1}{\sum_{(x,h) \in D_k}h}\sum_{(x,h) \in D_k, x &lt; z}h\]</span>.</p>
+<p>For example, given</p>
+<table class="table">
+<thead>
+<tr class="header">
+<th>feature value</th>
+<th>1</th>
+<th>4</th>
+<th>6</th>
+<th>10</th>
+<th>12</th>
+<th>20</th>
+<th>30</th>
+<th>44</th>
+<th>59</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math display">\[h_i\]</span></td>
+<td>0.1</td>
+<td>0.1</td>
+<td>0.1</td>
+<td>0.1</td>
+<td>0.1</td>
+<td>0.1</td>
+<td>0.4</td>
+<td>0.2</td>
+<td>0.6</td>
+</tr>
+</tbody>
+</table>
+<p>30 corresponds to <span class="math inline">\(\frac{1}{3}\)</span> percentile, and 59 corresponds to <span class="math inline">\(\frac{2}{3}\)</span> percentile.</p>
+<p><strong>Other techniques in XGBoost to improve efficiency</strong></p>
+<ul>
+<li><p>Each column (feature) of the dataset is pre-sorted and stored in memory as a column block. Each block contains the sorted feature column and each observation’s corresponding label value. Recall that when finding the best split point in a decision tree, samples with the feature value less than the split value go to the left subtree, and samples with the feature value larger than the split point go to the right subtree. Instead of sorting in every split in every tree, this pre-sorting step is done only once. Then the efficiently sorted columns will be reused many times in building every single tree.</p></li>
+<li><p>XGBoost supports parallel computing during the process of finding the best split point in building a single tree. Then the information gain calculation for each feature can be done in parallel. Moreover, You can tune the parameter nthread to control the number of cores used in training the XGBoost model.</p></li>
+<li><p>XGBoost supports column subsampling similar to a random forest.</p></li>
+</ul>
+</section>
 <section id="dataset-introduction" class="level2">
 <h2 class="anchored" data-anchor-id="dataset-introduction">Dataset Introduction</h2>
 <p>Our vignette is conducted on a simulated <a href="https://www.kaggle.com/datasets/dhanushnarayananr/credit-card-fraud/data">“Credit Card Fraud”</a> dataset obtained on Kaggle. This dataset presents a binary classification problem, classifying transactions as either fraudulent or legitimate. With 8 variables and a total of 1,000,000 observations, only 8.74% (87,403) are marked as fraudulent, highlighting a significant class imbalance.</p>
@@ -342,98 +415,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  x[<span class="fu">abs</span>(x) <span class="sc">&gt;</span> .at] <span class="ot">&lt;-</span> <span class="fu">sign</span>(x[<span class="fu">abs</span>(x) <span class="sc">&gt;</span> .at])<span class="sc">*</span>.at</span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(x)</span>
 <span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="co"># rename and scale: since some variable are on distance scale/some are ratio</span></span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> data <span class="sc">%&gt;%</span></span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">dist_home =</span> distance_from_home,</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>         <span class="at">dist_last_transact =</span> distance_from_last_transaction,</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>         <span class="at">ratio_to_med_price =</span> ratio_to_median_purchase_price) <span class="sc">%&gt;%</span></span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="at">.cols =</span> <span class="fu">c</span>(dist_home, dist_last_transact, ratio_to_med_price), </span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>                <span class="sc">~</span> <span class="fu">trim</span>(<span class="fu">scale</span>((.x))[, <span class="dv">1</span>], <span class="at">.at =</span> <span class="dv">3</span>)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="co"># rename and scale: since some variable are on distance scale/some are ratio</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> data <span class="sc">%&gt;%</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(<span class="at">dist_home =</span> distance_from_home,</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>         <span class="at">dist_last_transact =</span> distance_from_last_transaction,</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>         <span class="at">ratio_to_med_price =</span> ratio_to_median_purchase_price) <span class="sc">%&gt;%</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="at">.cols =</span> <span class="fu">c</span>(dist_home, dist_last_transact, ratio_to_med_price), </span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>                <span class="sc">~</span> <span class="fu">trim</span>(<span class="fu">scale</span>((.x))[, <span class="dv">1</span>], <span class="at">.at =</span> <span class="dv">3</span>)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-</section>
-<section id="introduction-to-boosted-trees-and-xgboost" class="level2">
-<h2 class="anchored" data-anchor-id="introduction-to-boosted-trees-and-xgboost">Introduction to Boosted Trees and XGBoost</h2>
-<section id="gradient-boosted-decision-tree-gbdt" class="level3">
-<h3 class="anchored" data-anchor-id="gradient-boosted-decision-tree-gbdt">Gradient Boosted Decision Tree (GBDT)</h3>
-<p>In GBDT, the prediction of observation i is the sum of the predicted values from each of the k trees in the ensemble.</p>
-<p><span class="math display">\[\hat{y} = \sum_{i=1}^{k} f_k(x_i)\]</span>Each tree in the boosting model fits the negative gradient of the loss function to the current model’s prediction, and the current model’s prediction is the sum of the first k-1 trees.</p>
-<p>If we use mean squared error as the loss function in a regression task, each tree simply fits the residual.</p>
-<p>For example, suppose a person is 30 years old, and a GBDT model is used to predict his age.</p>
-<ul>
-<li><p>Given the dataset, suppose the first tree’s prediction is 20.</p></li>
-<li><p>Then the second tree fits the residual, which is 30 - 20 = 10. Suppose the second tree outputs 7.</p></li>
-<li><p>Then the third tree fits the residual 10 - 7 = 3. Suppose the third tree outputs 2.</p></li>
-<li><p>By adding the prediction of the three trees, we get our final prediction.</p></li>
-</ul>
-</section>
-<section id="xgboost" class="level3">
-<h3 class="anchored" data-anchor-id="xgboost">XGBoost</h3>
-<p>XGBoost is an efficient and scalable implementation of the gradient-boosted decision tree.</p>
-<section id="tree-boosting" class="level4">
-<h4 class="anchored" data-anchor-id="tree-boosting">Tree Boosting</h4>
-<p>The objective function for k-th tree is <span class="math display">\[\sum_{i=1}^{n} l(y_i, \hat{y_i}^{(k)})+\sum_{i=1}^{K}\omega(f_i)\]</span>.</p>
-<p>The first term in the objective function denotes the loss function. It can be MSE in regression or cross-entropy in classification problems. The second term <span class="math inline">\(\omega(f_i)\)</span> is a regularized term to control the model’s complexity to avoid overfitting.</p>
-<p>When additively training the model, XGBoost used a second-order Taylor expansion to approximate the objective function instead of using the negative gradient.</p>
-<p>After derivation, the optimization goal at step k will be <span class="math display">\[\sum_{i=1}^{n}[g_if_k(x_i) + \frac{1}{2}h_{i}f_k^2(x_i)] + \omega(f_k)\]</span>,</p>
-<p>where <span class="math inline">\(g_i\)</span> and <span class="math inline">\(h_i\)</span> denote the first-order and second-order derivative of the loss function to the current model’s prediction. i.e.&nbsp;<span class="math inline">\(g_i = \partial_{\hat{y_i}^{k-1}}l(y_i, \hat{y_i}^{k-1})\)</span> and <span class="math inline">\(h_i = \partial^2_{\hat{y_i}{k-1}}l(y_i, \hat{y_i}^{k-1})\)</span></p>
-<p>We find that the objective function for each tree depends only on <span class="math inline">\(g_i\)</span> and <span class="math inline">\(h_i\)</span>, derivatives of the loss function. Therefore, XGBoost can be widely used in many scenarios, including regression, classification, and ranking problems, as long as XGBoost is given a loss function that is second-order differentiable. You can even customize your loss function in XGBoost!</p>
-</section>
-</section>
-<section id="approximate-split-finding" class="level3">
-<h3 class="anchored" data-anchor-id="approximate-split-finding">Approximate Split Finding</h3>
-<p>We first look at a basic greedy approach for finding best split point.</p>
-<p><img src="img/Exact_greedy_algorithm.png" class="img-fluid"></p>
-<p>In the above Exact Greedy Algorithm, we need to traverse every possible value of every feature to find the best split point. The score measures the reduction of loss function before and after the split. However, the method is inefficient when dealing with large datasets.</p>
-<p>Instead, XGBoost used an approximated approach to find split points efficiently.</p>
-<p><img src="img/approximate_algorithm.webp" class="img-fluid"></p>
-<p>In the approximate framework, we first select some candidate splitting points according to percentiles of the feature distribution based on some criteria. For instance, a sorted feature column contains 10 values [1,2,2,2,2,4,5,7,9,20]. A 0.6 quantile corresponds to 4.</p>
-</section>
-<section id="weighted-quantile-sketch" class="level3">
-<h3 class="anchored" data-anchor-id="weighted-quantile-sketch">Weighted Quantile Sketch</h3>
-<p>How do we find these candidate split points? We cannot assign equal weights to every observation of the feature, as larger values may have a more significant impact on the loss function. Therefore, we need to calculate a weight for each feature value to make candidates distribute evenly on the data.</p>
-<p>For each observation, XGBoost used its second-order derivative <span class="math inline">\(h_i\)</span> as weight. Formally, let multi-set <span class="math inline">\(D_k = {(x_{1k},h_1), (x_{2k}, h_2)…(x_{nk}, h_{n})}\)</span> denote k-th feature value and its corresponding second-order gradient, the rank function is <span class="math display">\[r_k(z) = \frac{1}{\sum_{(x,h) \in D_k}h}\sum_{(x,h) \in D_k, x &lt; z}h\]</span>.</p>
-<p>For example, given</p>
-<table class="table">
-<thead>
-<tr class="header">
-<th>feature value</th>
-<th>1</th>
-<th>4</th>
-<th>6</th>
-<th>10</th>
-<th>12</th>
-<th>20</th>
-<th>30</th>
-<th>44</th>
-<th>59</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td><span class="math display">\[h_i\]</span></td>
-<td>0.1</td>
-<td>0.1</td>
-<td>0.1</td>
-<td>0.1</td>
-<td>0.1</td>
-<td>0.1</td>
-<td>0.4</td>
-<td>0.2</td>
-<td>0.6</td>
-</tr>
-</tbody>
-</table>
-<p>30 corresponds to <span class="math inline">\(\frac{1}{3}\)</span> percentile, and 59 corresponds to <span class="math inline">\(\frac{2}{3}\)</span> percentile.</p>
-</section>
-<section id="other-techniques-in-xgboost-to-improve-efficiency" class="level3">
-<h3 class="anchored" data-anchor-id="other-techniques-in-xgboost-to-improve-efficiency">Other techniques in XGBoost to improve efficiency</h3>
-<ul>
-<li><p>Each column (feature) of the dataset is pre-sorted and stored in memory as a column block. Each block contains the sorted feature column and each observation’s corresponding label value. Recall that when finding the best split point in a decision tree, samples with the feature value less than the split value go to the left subtree, and samples with the feature value larger than the split point go to the right subtree. Instead of sorting in every split in every tree, this pre-sorting step is done only once. Then the efficiently sorted columns will be reused many times in building every single tree.</p></li>
-<li><p>XGBoost supports parallel computing during the process of finding the best split point in building a single tree. Then the information gain calculation for each feature can be done in parallel. Moreover, You can tune the parameter nthread to control the number of cores used in training the XGBoost model.</p></li>
-<li><p>XGBoost supports column subsampling similar to a random forest.</p></li>
-</ul>
-</section>
 </section>
 <section id="fraud-detection-with-xgboost-in-r" class="level2">
 <h2 class="anchored" data-anchor-id="fraud-detection-with-xgboost-in-r">Fraud Detection with XGBoost in R</h2>
