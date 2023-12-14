@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Mu Niu, Yixin Xue, Amber Wang, David Lin, Qifei Cui">
-<meta name="dcterms.date" content="2023-12-08">
+<meta name="dcterms.date" content="2023-12-13">
 
 <title>XGBoost Vignette: Fraud Detection</title>
 <style>
@@ -100,7 +100,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">December 8, 2023</p>
+      <p class="date">December 13, 2023</p>
     </div>
   </div>
   
@@ -136,8 +136,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"data/card_transdata.csv"</span>) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
-<section id="abstract" class="level2">
-<h2 class="anchored" data-anchor-id="abstract">Abstract</h2>
+<section id="introduction" class="level2">
+<h2 class="anchored" data-anchor-id="introduction">Introduction</h2>
 <p>XGBoost, an acronym for eXtreme Gradient Boosting, was crafted by Dr.&nbsp;Tianqi Chen in 2016 as a gradient-boosting algorithm. Demonstrating remarkable success, it has emerged as a formidable player in various data science competitions. Renowned for its exceptional performance, XGBoost stands out as a robust solution for tasks such as handling structured data, text classification, regression, and notably, exhibiting superior capabilities on large-scale datasets. Our vignette presents a comprehensive exploration of XGBoost, including its mathematical principles, programming language support, and practical application in classification problems.</p>
 </section>
 <section id="principal-and-theory" class="level2">
@@ -482,7 +482,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li><p><strong>data:</strong> Training data in DMatrix structure</p></li>
 <li><p><strong>max.depth:</strong> The size of each tree and a rule of thumb is to use 2 or 3 to prevent overfitting</p></li>
 <li><p><strong>watchlist:</strong> Track model performance on training and validation data during the training process to prevent overfitting</p></li>
-<li><p><strong>nrounds:</strong> number of boosting rounds</p></li>
+<li><p><strong>nrounds:</strong> Number of boosting rounds</p></li>
 <li><p><strong>early_stopping_rounds:</strong> Stop the training process if the model’s accuracy on validation set hasn’t improved for the specified number of rounds</p></li>
 </ul>
 <p>As mentioned earlier, we utilize a watchlist along with a validation set to determine the optimal number of boosting rounds (nrounds). During training, we monitor the model’s performance on both the training and validation datasets. The watchlist is often used in conjunction with the early_stopping_rounds parameter, which helps in identifying the point of overfitting and the appropriate time to halt the training process. The training ceases when there is no improvement in the model’s performance on the validation set for a consecutively specified number of rounds. At this point, the early_stopping_rounds feature intervenes and shows the optimal number of boosting iterations.</p>
@@ -835,7 +835,7 @@ Stopping. Best iteration:
 </table>
 <p>Additionally, it’s always a good idea to review the important features identified by the model after training an XGBoost. We can utilize the xgb.plot.importance function to visualize the most important features identified by XGBoost. This step not only aids in understanding the model’s decisions but also enhances our familiarity with this type of dataset, showcasing one of the advantages of tree-based methods: interpretability. The most critical among these is the ratio of the transaction purchase price to the median purchase price. This finding suggests that transactions with amounts significantly deviating from the median are more likely to be fraudulent. Also, the model indicates that online transactions are more likely to be fraudulent. Additionally, the distances from home to the current transaction’s location another important features. Transactions occurring at locations far from home are also more likely to be identified as fraudulent.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="do">### Feature Importance</span></span>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Feature Importance</span></span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>importance <span class="ot">&lt;-</span> <span class="fu">xgb.importance</span>(<span class="at">feature_names =</span> <span class="fu">colnames</span>(train.x), <span class="at">model =</span> final)</span>
 <span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(importance) <span class="sc">%&gt;%</span> knitr<span class="sc">::</span><span class="fu">kable</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">

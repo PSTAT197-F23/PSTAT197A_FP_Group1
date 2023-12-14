@@ -1,7 +1,7 @@
 ---
 title: "XGBoost Vignette: Fraud Detection"
 author: "Mu Niu, Yixin Xue, Amber Wang, David Lin, Qifei Cui"
-date: "2023-12-08"
+date: "2023-12-13"
 output: html_document
 ---
 
@@ -34,7 +34,7 @@ library(gridExtra)
 data <- read_csv("data/card_transdata.csv") 
 ```
 
-## Abstract
+## Introduction
 
 XGBoost, an acronym for eXtreme Gradient Boosting, was crafted by Dr. Tianqi Chen in 2016 as a gradient-boosting algorithm. Demonstrating remarkable success, it has emerged as a formidable player in various data science competitions. Renowned for its exceptional performance, XGBoost stands out as a robust solution for tasks such as handling structured data, text classification, regression, and notably, exhibiting superior capabilities on large-scale datasets. Our vignette presents a comprehensive exploration of XGBoost, including its mathematical principles, programming language support, and practical application in classification problems.
 
@@ -264,7 +264,7 @@ Finally, we are at the model fitting part! Let's first talk about the parameters
 
 -   **watchlist:** Track model performance on training and validation data during the training process to prevent overfitting
 
--   **nrounds:** number of boosting rounds
+-   **nrounds:** Number of boosting rounds
 
 -   **early_stopping_rounds:** Stop the training process if the model's accuracy on validation set hasn't improved for the specified number of rounds
 
@@ -335,7 +335,7 @@ ggroc(roc) +
 Additionally, it's always a good idea to review the important features identified by the model after training an XGBoost. We can utilize the xgb.plot.importance function to visualize the most important features identified by XGBoost. This step not only aids in understanding the model's decisions but also enhances our familiarity with this type of dataset, showcasing one of the advantages of tree-based methods: interpretability. The most critical among these is the ratio of the transaction purchase price to the median purchase price. This finding suggests that transactions with amounts significantly deviating from the median are more likely to be fraudulent. Also, the model indicates that online transactions are more likely to be fraudulent. Additionally, the distances from home to the current transaction’s location another important features. Transactions occurring at locations far from home are also more likely to be identified as fraudulent.
 
 ```{r}
-### Feature Importance
+# Feature Importance
 importance <- xgb.importance(feature_names = colnames(train.x), model = final)
 head(importance) %>% knitr::kable()
 
