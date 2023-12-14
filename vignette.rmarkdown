@@ -80,7 +80,7 @@ After derivation, the optimization goal at step k will be $$\sum_{i=1}^{n}[g_if_
 
 where $g_i$ and $h_i$ denote the first-order and second-order derivative of the loss function to the current model's prediction. i.e. $g_i = \partial_{\hat{y_i}^{k-1}}l(y_i, \hat{y_i}^{k-1})$ and $h_i = \partial^2_{\hat{y_i}{k-1}}l(y_i, \hat{y_i}^{k-1})$
 
-We find that the objective function for each tree depends only on $g_i$ and $h_i$, derivatives of the loss function. Therefore, XGBoost can be widely used in many scenarios, including regression, classification, and ranking problems, as long as XGBoost is given a loss function that is second-order differentiable. You can even customize your loss function in XGBoost!
+We find that the objective function for each tree depends only on $g_i$ and $h_i$, derivatives of the loss function. Therefore, XGBoost can be widely used in many scenarios, including regression, classification, and ranking problems, as long as XGBoost is given a loss function that is second-order differentiable. You can even customize your loss function in XGBoost![@He2021]
 
 **Approximate Split Finding**
 
@@ -132,7 +132,7 @@ Having grasped the mathematical concepts behind it, we can now proceed to the mo
 
 **Dataset Introduction**
 
-This vignette is conducted on a simulated ["Credit Card Fraud"](https://www.kaggle.com/datasets/dhanushnarayananr/credit-card-fraud/data) dataset obtained on Kaggle. This dataset presents a binary classification problem, classifying transactions as either fraudulent or legitimate. With 8 variables and a total of 1,000,000 observations, only 8.74% (87,403) are marked as fraudulent, highlighting a significant class imbalance.
+This vignette is conducted on a simulated ["Credit Card Fraud"](https://www.kaggle.com/datasets/dhanushnarayananr/credit-card-fraud/data) dataset obtained on Kaggle[@ULB2018]. This dataset presents a binary classification problem, classifying transactions as either fraudulent or legitimate. With 8 variables and a total of 1,000,000 observations, only 8.74% (87,403) are marked as fraudulent, highlighting a significant class imbalance.
 
 
 ```{r, echo=FALSE, message= F}
@@ -214,7 +214,7 @@ This graph represents the distribution of 'fraud'. Around 91% of the transaction
 **SMOTE on Bias Dataset in R**
 In the Credit-card-fraud dataset, where 8.74% of 1,000,000 transactions are fraudulent, stratified sampling will maintain this ratio in each data split to avoid bias towards the majority class.
 
-Over-sampling is a technique to balance an imbalanced dataset by increasing the number of instances in the underrepresented class, which is the fraudulent transactions. We are going to apply over-sampling using Synthetic Minority Over-sampling Technique **(SMOTE)**
+Over-sampling is a technique to balance an imbalanced dataset by increasing the number of instances in the underrepresented class, which is the fraudulent transactions. We are going to apply over-sampling using Synthetic Minority Over-sampling Technique **(SMOTE)**.
 
 **SMOTE** is an advanced over-sampling technique used to create synthetic samples for the minority class in an imbalanced dataset. It works by selecting samples that are close in the feature space, drawing a line between the samples in the space and drawing a new sample at a point along that line.
 
@@ -237,7 +237,7 @@ data_smote$fraud <- as.numeric(as.character(data_smote$fraud))
 
 
 
-This following graph represents the distribution of 'fraud'. It is noticeable that the data is balanced.
+This following graph represents the distribution of 'fraud'. It is noticeable that the data is more balanced.
 
 
 ```{r}
@@ -362,7 +362,7 @@ xgb_smote.val <-  xgb.DMatrix(data = val_smote.x, label = val_smote.y)
 
 **Model Fitting**
 
-Finally, we are at the model fitting part! Let's first talk about the parameters:
+Finally, we are at the model fitting part! Let's first talk about the parameters[@XGBoostDocs]:
 
 -   **objective:** The goal of the model. In this case, we use 'binary:logistic' to predict the probability of having a fraud based on the predictor variables
 
@@ -522,7 +522,7 @@ Additionally, it's always a good idea to review the important features identifie
 
 ```{r}
 # Feature Importance
-importance <- xgb.importance(feature_names = colnames(train.x), model = final)
+importance <- xgb.importance(feature_names = colnames(train.x), model = model_smote)
 head(importance) %>% knitr::kable()
 
 # plot 3 most important features
@@ -676,4 +676,12 @@ This approach ensures that we systematically search through the hyperparameter s
 5.  Evaluated the model's performance using ROC-AUC plot and confusion matrix
 6.  Undertook additional analysis, such as visualizing the importance of features identified by the model
 7.  Now, it's your turn to put these steps into practice!
+
+## Reference
+
+- He, Shen, et al. "An Effective Cost-Sensitive XGBoost Method for Malicious URLs Detection in Imbalanced Dataset." _IEEE Access_, vol. 9, 2021, pp. 93089<e2><80><93>93096, doi:10.1109/access.2021.3093094.
+
+- ULB, Machine Learning Group -. "Credit Card Fraud Detection." _Kaggle_, 23 Mar. 2018, www.kaggle.com/datasets/mlg-ulb/creditcardfraud. Accessed 06 Dec. 2023.
+
+- "XGBoost Documentation<ef><83><81>." _XGBoost Documentation - Xgboost 2.0.2 Documentation_, xgboost.readthedocs.io/.
 
