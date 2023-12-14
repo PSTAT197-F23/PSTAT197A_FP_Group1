@@ -152,12 +152,14 @@ Building on the introduction, we've established a basic understanding of the dat
 First, we want to check if there is missing values in the dataset
 
 ```{r}
+# check missing values
 data %>% is.na() %>% sum()
 ```
 
 Through the code above, we know that this dataset contains no missing value, therefore there is no imputation needed. Then, we can use the following chunk to check the distribution of the variables.
 
 ```{r, message = F}
+# plot variable distribution
 par(mfrow = c(3, 3))
 for (col in colnames(data)) {
   density_values <- density(data[[col]])
@@ -168,6 +170,7 @@ for (col in colnames(data)) {
 We can observe from the density curve graph of each variable that except for the first three, the other 5 variables including our response variable 'fraud' are binary. But the first three variables are greatly skewed. After that, we want to see if correlation exists between the variables.
 
 ```{r, message = F}
+# correlation plot
 par(mfrow = c(1, 1))
 # Correlation
 data %>%
@@ -178,6 +181,7 @@ data %>%
 From the correlation plot, the numerical variable 'ratio_to_median' has a positive correlation with respect to 'fraud', and then are 'distance_from_home' and 'online_order'. Other than that, 'used_pin_number' has negatively correlated with 'fraud'. Lastly, we want to specifically analyze the distribution of the response variable, which is our most interested variable.
 
 ```{r, message = F}
+# response distribution
 plot.fraud <- ggplot(data, aes(x = ifelse(data$fraud == 0, 'Safe', 'Fraud'))) + 
   geom_bar(fill = c('cyan','cornflowerblue')) +
   labs(title="Distribution of Fraud in the Dataset", x="Fraud Class", y="Count") + 
@@ -250,24 +254,25 @@ xgb.test <-  xgb.DMatrix(data = test.x, label = test.y)
 
 Finally, we are at the model fitting part! Let's first talk about the parameters:
 
--   objective: The goal of the model. In this case, we use 'binary:logistic' to predict the probability of having a fraud based on the predictor variables
+-   **objective:** The goal of the model. In this case, we use 'binary:logistic' to predict the probability of having a fraud based on the predictor variables
 
--   eta: The learning speed and we used the default value of 0.3
+-   **eta:** The learning speed and we used the default value of 0.3
 
--   data: Training data in DMatrix structure
+-   **data:** Training data in DMatrix structure
 
--   max.depth: The size of each tree and a rule of thumb is to use 2 or 3 to prevent overfitting
+-   **max.depth:** The size of each tree and a rule of thumb is to use 2 or 3 to prevent overfitting
 
--   watchlist: Track model performance on training and validation data during the training process to prevent overfitting
+-   **watchlist:** Track model performance on training and validation data during the training process to prevent overfitting
 
--   nrounds: number of boosting rounds
+-   **nrounds:** number of boosting rounds
 
--   early_stopping_rounds: Stop the training process if the model's accuracy on validation set hasn't improved for the specified number of rounds
+-   **early_stopping_rounds:** Stop the training process if the model's accuracy on validation set hasn't improved for the specified number of rounds
 
 As mentioned earlier, we utilize a watchlist along with a validation set to determine the optimal number of boosting rounds (nrounds). During training, we monitor the model's performance on both the training and validation datasets. The watchlist is often used in conjunction with the early_stopping_rounds parameter, which helps in identifying the point of overfitting and the appropriate time to halt the training process. The training ceases when there is no improvement in the model's performance on the validation set for a consecutively specified number of rounds. At this point, the early_stopping_rounds feature intervenes and shows the optimal number of boosting iterations.
 
 **NOTE:** The output of the following code chunk is long, but we have chosen to keep it in its entirety. This decision is made to comprehensively illustrate the entire process of boosting iterations, and to clearly demonstrate the functionality of both the watchlist and early_stopping_rounds.
 
+\tiny
 ```{r}
 # define the watchlist and other parameters
 watchlist = list(train=xgb.train, validation=xgb.val)
@@ -285,31 +290,22 @@ model <-  xgb.train(params = params,
                     nrounds = 500, # Number of boosting iterations
                     early_stopping_rounds = 50) # Number of iterations we will wait for the next decrease
 ```
+\normalsize
 
-**Results and Analysis**
-
-Our model stops boosting at 216th round, which means the model accuracy decreases in the next 50 rounds. So we know that overfitting occurs after that. Hence, we changed parameter nrounds to 216 to train our final model.
-
-Similar to the random forest, we can visualize the variable importance in XGBoost.
-
-```{r, eval = F}
+```{r}
 # Define final model
 # The argument verbose = 0 tells R not to display the training and testing error for each round.
 final <-  xgboost(params = params, data = xgb.train, max.depth = 3, nrounds = 216, verbose = 0)
-
-### Feature Importance
-# WRITE-UP refer to: https://cran.r-project.org/web/packages/xgboost/vignettes/discoverYourData.html
-importance <- xgb.importance(feature_names = colnames(train.x), model = final)
-head(importance)
-
-# plot
-# 3 most important features
-xgb.plot.importance(importance_matrix = importance, top_n = 5)
 ```
 
-**Prediction and Accuracy Measure**
+After the training model ceases operation, our first step is to examine the optimal number of boosting rounds it suggests. In our case, the model halted boosting at the 216th round, indicating an increase in log-loss on the validation set over the subsequent 50 rounds. This suggests that overfitting begins beyond this point. Consequently, we adjust the nrounds parameter to 216 for training our final model. For a more streamlined output, we set verbose = 0, instructing the model to train without reporting the log-loss at each iteration. 
 
-```{r, eval = F}
+
+**Final Model Result and Analysis**
+
+The final and crucial step involves assessing the model's performance. We employ both the ROC-AUC plot and the confusion matrix for this evaluation. By analyzing the model's performance on the testing dataset using these tools, we observed a remarkable AUC of 0.99988. This exceptionally high score underscores the model's outstanding proficiency in classifying the testing data, as well as its robust generalizability to new, unseen datasets.
+
+```{r, message = F}
 # Use model to make predictions on test data
 pred.y <- predict(final, test.x)
 
@@ -318,12 +314,10 @@ pred.label <- ifelse(pred.y > 0.5, 1, 0)
 
 # Confusion Matrix
 confusion.matrix <- table(Predicted = pred.label, Actual = test.y)
-print(confusion.matrix)
 
 # AUC-ROC
 roc <- roc(test.y, pred.label)
 auc <- auc(roc)
-print(auc)
 
 # Visualization
 ggroc(roc) +
@@ -331,4 +325,31 @@ ggroc(roc) +
   annotate("text", x = 0.2, y = 0.8, label = paste("AUC =", round(auc, 5)))
 ```
 
-The plot on the right shows a very high AUC score of 0.99988, indicating that the model is almost a perfect classifier. Such an unusual result is probably because the simulated dataset is designed for practice purposes, and the data is so unbalanced.
+|           |          Actual         |                         |
+|:---------:|:-----------------------:|:-----------------------:|
+| Predicted |          0              |            1            |
+|     0     |`r confusion.matrix[1,1]`|`r confusion.matrix[1,2]`|
+|     1     |`r confusion.matrix[2,1]`|`r confusion.matrix[2,2]`|
+
+
+Additionally, it's always a good idea to review the important features identified by the model after training an XGBoost. We can utilize the xgb.plot.importance function to visualize the most important features identified by XGBoost. This step not only aids in understanding the model's decisions but also enhances our familiarity with this type of dataset, showcasing one of the advantages of tree-based methods: interpretability. The most critical among these is the ratio of the transaction purchase price to the median purchase price. This finding suggests that transactions with amounts significantly deviating from the median are more likely to be fraudulent. Also, the model indicates that online transactions are more likely to be fraudulent. Additionally, the distances from home to the current transaction’s location another important features. Transactions occurring at locations far from home are also more likely to be identified as fraudulent.
+
+```{r}
+### Feature Importance
+importance <- xgb.importance(feature_names = colnames(train.x), model = final)
+head(importance) %>% knitr::kable()
+
+# plot 3 most important features
+xgb.plot.importance(importance_matrix = importance, top_n = 3)
+```
+
+
+## Check List
+
+1. Conducted Exploratory Data Analysis to gain an understanding of the dataset
+2. Divided the data into training, validation, and test sets, and converted it into the xgb.DMatrix structure
+3. Utilized the xgb.train function with the watchlist and early_stopping_rounds parameters to determine the optimal number of boosting rounds
+4. Trained the final model using the identified optimal number of rounds as nrounds
+5. Evaluated the model's performance using ROC-AUC plot and confusion matrix
+6. Undertook additional analysis, such as visualizing the importance of features identified by the model
+7. Now, it's your turn to put these steps into practice!
