@@ -472,7 +472,7 @@ ggroc(roc) +
   annotate("text", x = 0.2, y = 0.8, label = paste("AUC =", round(auc, 5)))
 ```
 
-These AUC values are very close to 1, which suggests that both models perform exceptionally well in distinguishing between the classes. The model trained with SMOTE has a slightly higher AUC, indicating a marginally better performance in terms of classification. Notice that when 
+These AUC values are very close to 1, which suggests that both models perform exceptionally well in distinguishing between the classes. The model trained with SMOTE has a slightly higher AUC, indicating a marginally better performance in terms of classification. 
 
 
 |           |          Actual           |                           |
@@ -513,7 +513,6 @@ Before running the optimization, we need to prepare our data. Preparing data inv
 * Training and Validation Sets: Inside the loop, we separate the features (predictor variables) from the target (response variable, fraud) for both training and validation sets. This separation is essential for supervised learning where the model needs to learn the relationship between the features and the target.
 
 
-
 ```{r, eval=FALSE}
 # Set seed for reproducibility
 set.seed(197)
@@ -545,7 +544,6 @@ for(i in 1:k){
   xgb_folds[[i]] <- list(train = xgb_train_fold, val = xgb_val_fold)
 }
 ```
-
 
 
 **Define Parameter Grid**
